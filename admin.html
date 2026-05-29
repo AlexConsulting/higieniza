@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Higieniza Aí</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="admin-body">
+
+<!-- SIDEBAR -->
+<aside class="admin-sidebar" id="adminSidebar">
+  <div class="sidebar-header">
+    <div class="nav-logo">
+      <div class="logo-circle">h</div>
+      <div class="logo-text">
+        <span class="logo-main">Higieniza Aí</span>
+        <span class="logo-sub">Painel Admin</span>
+      </div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="#" class="active" data-page="dashboard">
+      <span class="nav-icon">📊</span> Dashboard
+    </a>
+    <a href="#" data-page="orcamentos">
+      <span class="nav-icon">📋</span> Orçamentos
+    </a>
+    <a href="#" data-page="agenda">
+      <span class="nav-icon">📅</span> Agenda
+    </a>
+    <a href="#" data-page="financeiro">
+      <span class="nav-icon">💰</span> Financeiro
+    </a>
+    <a href="#" data-page="clientes">
+      <span class="nav-icon">👥</span> Clientes
+    </a>
+    <a href="#" data-page="cupons">
+      <span class="nav-icon">🎟️</span> Cupons
+    </a>
+    <a href="#" data-page="configuracoes">
+      <span class="nav-icon">⚙️</span> Configurações
+    </a>
+    <a href="index.html" target="_blank" style="margin-top:auto">
+      <span class="nav-icon">🌐</span> Ver Site
+    </a>
+  </nav>
+  <div class="sidebar-footer">v1.0 · Higieniza Aí</div>
+</aside>
+
+<!-- MAIN -->
+<main class="admin-main">
+  <!-- TOPBAR -->
+  <div class="admin-topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="nav-burger" id="sidebarToggle" style="display:none">
+        <span></span><span></span><span></span>
+      </button>
+      <h1 id="pageTitle">Dashboard</h1>
+    </div>
+    <div class="topbar-actions">
+      <button class="badge-notif" id="notifBtn" title="Notificações">
+        🔔 <span class="badge-count" id="badgeCount">0</span>
+      </button>
+      <button class="theme-toggle" id="themeToggleAdmin">
+        <span class="icon-sun">☀️</span>
+        <span class="icon-moon">🌙</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- PAGES -->
+  <div class="admin-content">
+
+    <!-- ========================= DASHBOARD ========================= -->
+    <div id="page-dashboard" class="page">
+      <!-- ALERTAS -->
+      <div id="alertsArea"></div>
+
+      <!-- KPIs -->
+      <div class="dashboard-grid">
+        <div class="dash-card">
+          <div class="dash-card-icon">💰</div>
+          <div class="dash-card-label">Receita Hoje</div>
+          <div class="dash-card-value" id="kpiHoje">R$ 0</div>
+          <div class="dash-card-delta up" id="kpiHojeDelta">↑ 0%</div>
+          <div class="dash-card-accent"></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-icon">📅</div>
+          <div class="dash-card-label">Receita Semana</div>
+          <div class="dash-card-value" id="kpiSemana">R$ 0</div>
+          <div class="dash-card-delta up" id="kpiSemanaDelta">↑ 0%</div>
+          <div class="dash-card-accent"></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-icon">📈</div>
+          <div class="dash-card-label">Receita Mês</div>
+          <div class="dash-card-value" id="kpiMes">R$ 0</div>
+          <div style="margin-bottom:8px">
+            <div class="meta-bar"><div class="meta-fill" id="metaFill" style="width:0%"></div></div>
+            <div style="font-size:0.72rem;color:var(--text-mid);margin-top:4px" id="metaLabel">0% da meta</div>
+          </div>
+          <div class="dash-card-accent"></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-icon">🎯</div>
+          <div class="dash-card-label">Taxa de Conversão</div>
+          <div class="dash-card-value" id="kpiConversao">0%</div>
+          <div class="dash-card-delta" id="kpiConversaoDelta" style="color:var(--text-mid)">orçamentos → confirmados</div>
+          <div class="dash-card-accent"></div>
+        </div>
+      </div>
+
+      <!-- PROJEÇÃO -->
+      <div style="background:linear-gradient(135deg,var(--blue),var(--blue-mid));border-radius:16px;padding:20px 28px;margin-bottom:24px;color:white;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+        <div>
+          <div style="font-size:0.75rem;opacity:0.7;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Receita Projetada (mês)</div>
+          <div style="font-family:var(--font-display);font-size:2rem;font-weight:800" id="projecaoMes">R$ 0</div>
+          <div style="font-size:0.8rem;opacity:0.7;margin-top:4px" id="projecaoInfo">Baseado nos agendamentos confirmados</div>
+        </div>
+        <div style="display:flex;gap:24px">
+          <div style="text-align:center">
+            <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:700" id="agConfirmados">0</div>
+            <div style="font-size:0.72rem;opacity:0.7">Confirmados</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:700" id="agPendentes">0</div>
+            <div style="font-size:0.72rem;opacity:0.7">Pendentes</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:700;color:var(--orange)" id="custoKm">R$ 0</div>
+            <div style="font-size:0.72rem;opacity:0.7">Custo Desl.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3>Receita por período</h3>
+            <div class="chart-period-tabs">
+              <button class="period-tab active" data-period="semana">7 dias</button>
+              <button class="period-tab" data-period="mes">30 dias</button>
+              <button class="period-tab" data-period="trimestre">3 meses</button>
+            </div>
+          </div>
+          <canvas id="chartReceita" height="120"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3>Serviços mais pedidos</h3>
+          </div>
+          <canvas id="chartServicos" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- AGENDA SEMANAL -->
+      <div style="margin-bottom:24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="font-family:var(--font-display);font-size:1rem;font-weight:700">Agenda da Semana</h3>
+          <a href="#" data-page="agenda" class="nav-page-link" style="font-size:0.8rem;color:var(--blue);font-weight:600">Ver completa →</a>
+        </div>
+        <div class="week-grid" id="weekGrid"></div>
+      </div>
+
+      <!-- CIDADES -->
+      <div class="charts-grid" style="grid-template-columns:1fr 1fr">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3>Agendamentos por Cidade</h3>
+          </div>
+          <canvas id="chartCidades" height="160"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3>Custo x Receita por Serviço</h3>
+          </div>
+          <canvas id="chartMargens" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================= ORÇAMENTOS ========================= -->
+    <div id="page-orcamentos" class="page" style="display:none">
+      <div class="table-card">
+        <div class="table-header">
+          <h3>Orçamentos</h3>
+          <div class="table-actions">
+            <select class="btn-sm secondary" id="filterStatus" style="cursor:pointer">
+              <option value="">Todos</option>
+              <option value="novo">Novos</option>
+              <option value="enviado">Enviados</option>
+              <option value="confirmado">Confirmados</option>
+              <option value="concluido">Concluídos</option>
+            </select>
+            <button class="btn-sm secondary" onclick="exportarRelatorio()">📄 Exportar</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Nº</th>
+                <th>Data</th>
+                <th>Cliente</th>
+                <th>Serviços</th>
+                <th>Cidade</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaOrcamentos">
+              <tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:40px">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================= AGENDA ========================= -->
+    <div id="page-agenda" class="page" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3>Calendário de Agendamentos</h3>
+          </div>
+          <div id="adminCalendar"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3 id="agendaDayTitle">Selecione uma data</h3>
+          </div>
+          <div id="agendaDayList" style="display:flex;flex-direction:column;gap:10px">
+            <p style="color:var(--text-mid);font-size:0.875rem">Clique em uma data no calendário para ver os agendamentos.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================= FINANCEIRO ========================= -->
+    <div id="page-financeiro" class="page" style="display:none">
+      <div class="dashboard-grid" style="margin-bottom:24px">
+        <div class="dash-card">
+          <div class="dash-card-label">Receita Total</div>
+          <div class="dash-card-value" id="finTotal">R$ 0</div>
+          <div class="dash-card-accent"></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-label">Custo Deslocamento</div>
+          <div class="dash-card-value" id="finCusto">R$ 0</div>
+          <div class="dash-card-accent"></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-label">Margem Líquida</div>
+          <div class="dash-card-value" id="finMargem">R$ 0</div>
+          <div class="dash-card-accent"></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-label">Desconto Cupons</div>
+          <div class="dash-card-value" id="finCupons">R$ 0</div>
+          <div class="dash-card-accent"></div>
+        </div>
+      </div>
+      <div class="chart-card" style="margin-bottom:24px">
+        <div class="chart-card-header">
+          <h3>Receita Mensal (12 meses)</h3>
+          <button class="btn-sm secondary" onclick="exportarRelatorio()">📥 Exportar CSV</button>
+        </div>
+        <canvas id="chartFinanceiro" height="100"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <h3>Ticket Médio por Serviço</h3>
+        </div>
+        <canvas id="chartTicket" height="100"></canvas>
+      </div>
+    </div>
+
+    <!-- ========================= CLIENTES ========================= -->
+    <div id="page-clientes" class="page" style="display:none">
+      <div class="table-card">
+        <div class="table-header">
+          <h3>Histórico de Clientes</h3>
+          <input type="text" id="searchCliente" placeholder="Buscar por nome ou WhatsApp..." style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--bg);color:var(--text);outline:none;width:240px" />
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>WhatsApp</th>
+                <th>Cidade</th>
+                <th>Serviços</th>
+                <th>Total Gasto</th>
+                <th>Último Serviço</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaClientes">
+              <tr><td colspan="7" style="text-align:center;color:var(--text-mid);padding:40px">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================= CUPONS ========================= -->
+    <div id="page-cupons" class="page" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div class="settings-card">
+          <h3>Criar Novo Cupom</h3>
+          <div class="settings-field">
+            <label>Código do Cupom</label>
+            <input type="text" id="novoCupomCodigo" placeholder="Ex: VERAO10" style="text-transform:uppercase" />
+          </div>
+          <div class="settings-field">
+            <label>Desconto (%)</label>
+            <div style="display:flex;gap:8px">
+              <button class="btn-sm secondary" onclick="setCupomDesconto(5)" style="flex:1">5%</button>
+              <button class="btn-sm secondary" onclick="setCupomDesconto(7)" style="flex:1">7%</button>
+              <button class="btn-sm secondary" onclick="setCupomDesconto(10)" style="flex:1">10%</button>
+            </div>
+            <input type="number" id="novoCupomDesconto" placeholder="Ou digite manualmente" min="1" max="50" style="margin-top:8px" />
+          </div>
+          <div class="settings-field">
+            <label>Validade (opcional)</label>
+            <input type="date" id="novoCupomValidade" />
+          </div>
+          <div class="settings-field">
+            <label>Limite de usos (0 = ilimitado)</label>
+            <input type="number" id="novoCupomUsos" value="0" min="0" />
+          </div>
+          <button class="btn-save" onclick="criarCupom()">✓ Criar Cupom</button>
+        </div>
+        <div class="settings-card">
+          <h3>Cupons Ativos</h3>
+          <div class="coupon-list" id="couponList">
+            <p style="color:var(--text-mid);font-size:0.875rem">Nenhum cupom ativo.</p>
+          </div>
+        </div>
+      </div>
+      <!-- Histórico de uso -->
+      <div class="settings-card" style="margin-top:20px">
+        <h3>Uso de Cupons no Mês</h3>
+        <canvas id="chartCupons" height="80"></canvas>
+      </div>
+    </div>
+
+    <!-- ========================= CONFIGURAÇÕES ========================= -->
+    <div id="page-configuracoes" class="page" style="display:none">
+      <div class="settings-grid">
+
+        <!-- Preços Base -->
+        <div class="settings-card">
+          <h3>💰 Preços Base</h3>
+          <div class="settings-field"><label>Veículo - Hatch</label><input type="number" id="preco_carro_hatch" value="150" /></div>
+          <div class="settings-field"><label>Veículo - Sedan</label><input type="number" id="preco_carro_sedan" value="170" /></div>
+          <div class="settings-field"><label>Veículo - SUV</label><input type="number" id="preco_carro_suv" value="200" /></div>
+          <div class="settings-field"><label>Veículo - Van</label><input type="number" id="preco_carro_van" value="250" /></div>
+          <div class="settings-field"><label>Veículo - Pickup</label><input type="number" id="preco_carro_pickup" value="220" /></div>
+          <button class="btn-save" onclick="salvarPrecos('carro')">Salvar Veículos</button>
+        </div>
+
+        <div class="settings-card">
+          <h3>🛋️ Sofás e Colchões</h3>
+          <div class="settings-field"><label>Sofá 2 lugares</label><input type="number" id="preco_sofa_2lugares" value="120" /></div>
+          <div class="settings-field"><label>Sofá 3 lugares</label><input type="number" id="preco_sofa_3lugares" value="150" /></div>
+          <div class="settings-field"><label>Sofá 4 lugares</label><input type="number" id="preco_sofa_4lugares" value="180" /></div>
+          <div class="settings-field"><label>Sofá 5+ lugares</label><input type="number" id="preco_sofa_5lugares" value="220" /></div>
+          <div class="settings-field"><label>Com chaise</label><input type="number" id="preco_sofa_chaise" value="200" /></div>
+          <div class="settings-field"><label>Poltrona</label><input type="number" id="preco_sofa_poltrona" value="80" /></div>
+          <button class="btn-save" onclick="salvarPrecos('sofa')">Salvar Sofás</button>
+        </div>
+
+        <div class="settings-card">
+          <h3>😴 Colchões e Cadeiras</h3>
+          <div class="settings-field"><label>Colchão Solteiro</label><input type="number" id="preco_colchao_solteiro" value="100" /></div>
+          <div class="settings-field"><label>Colchão Casal</label><input type="number" id="preco_colchao_casal" value="130" /></div>
+          <div class="settings-field"><label>Colchão Queen</label><input type="number" id="preco_colchao_queen" value="160" /></div>
+          <div class="settings-field"><label>Colchão King</label><input type="number" id="preco_colchao_king" value="190" /></div>
+          <div class="settings-field"><label>Cadeira Jantar (unid.)</label><input type="number" id="preco_cadeira_jantar" value="35" /></div>
+          <div class="settings-field"><label>Cadeira Escritório</label><input type="number" id="preco_cadeira_escritorio" value="70" /></div>
+          <div class="settings-field"><label>Cadeira Gamer</label><input type="number" id="preco_cadeira_gamer" value="90" /></div>
+          <button class="btn-save" onclick="salvarPrecos('colchao')">Salvar</button>
+        </div>
+
+        <!-- Combustível -->
+        <div class="settings-card">
+          <h3>⛽ Combustível e Deslocamento</h3>
+          <div class="settings-field"><label>Preço Gasolina (R$/L)</label><input type="number" id="preco_gasolina" value="5.89" step="0.01" /></div>
+          <div class="settings-field"><label>Preço Etanol (R$/L)</label><input type="number" id="preco_etanol" value="3.99" step="0.01" /></div>
+          <div class="settings-field"><label>Combustível usado</label>
+            <select id="combustivel_tipo" style="background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:0.875rem;color:var(--text);outline:none">
+              <option value="gasolina">Gasolina</option>
+              <option value="etanol">Etanol</option>
+            </select>
+          </div>
+          <div class="settings-field"><label>Consumo do carro (km/L)</label><input type="number" id="carro_kmL" value="9" step="0.5" /></div>
+          <div class="settings-field"><label>Adicional até 10km (%)</label><input type="number" id="adicional_10km" value="5" /></div>
+          <div class="settings-field"><label>Adicional 11–30km (%)</label><input type="number" id="adicional_30km" value="10" /></div>
+          <div class="settings-field"><label>Adicional 31km+ (%)</label><input type="number" id="adicional_31km" value="15" /></div>
+          <button class="btn-save" onclick="salvarCombustivel()">Salvar Combustível</button>
+        </div>
+
+        <!-- Cidades especiais -->
+        <div class="settings-card">
+          <h3>🏙️ Adicional por Cidade</h3>
+          <p style="font-size:0.8rem;color:var(--text-mid);margin-bottom:14px">Adicional aplicado sobre o valor total do serviço.</p>
+          <div class="settings-field"><label>Santo André (%)</label><input type="number" id="adicional_santoandre" value="5" /></div>
+          <div class="settings-field"><label>São Caetano do Sul (%)</label><input type="number" id="adicional_saocaetano" value="10" /></div>
+          <div class="settings-field"><label>Outra cidade (padrão) (%)</label><input type="number" id="adicional_outras" value="0" /></div>
+          <button class="btn-save" onclick="salvarCidades()">Salvar Cidades</button>
+        </div>
+
+        <!-- Meta mensal -->
+        <div class="settings-card">
+          <h3>🎯 Meta e Configurações Gerais</h3>
+          <div class="settings-field"><label>Meta Mensal (R$)</label><input type="number" id="meta_mensal" value="5000" /></div>
+          <div class="settings-field"><label>WhatsApp Admin</label><input type="text" id="admin_whats" value="5511999999999" /></div>
+          <div class="settings-field"><label>WhatsApp da Empresa</label><input type="text" id="empresa_whats" value="5511999999999" /></div>
+          <div class="settings-field"><label>CEP da Sede</label><input type="text" id="sede_cep" value="09361250" /></div>
+          <div class="settings-field"><label>Horários disponíveis (separados por vírgula)</label>
+            <input type="text" id="horarios_disponiveis" value="08:00,09:00,10:00,11:00,13:00,14:00,15:00,16:00,17:00" />
+          </div>
+          <button class="btn-save" onclick="salvarGeral()">Salvar Configurações</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /admin-content -->
+</main>
+
+<!-- MODAL ORÇAMENTO -->
+<div class="admin-modal-overlay" id="modalOrcamento">
+  <div class="admin-modal">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+      <h2 id="modalOrcNumero">Orçamento</h2>
+      <button onclick="fecharModalOrc()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-mid)">×</button>
+    </div>
+
+    <div class="modal-section">
+      <h4>Dados do Cliente</h4>
+      <div class="info-row"><span>Nome</span><span id="oNome">—</span></div>
+      <div class="info-row"><span>WhatsApp</span><span id="oWhats">—</span></div>
+      <div class="info-row"><span>Endereço</span><span id="oEndereco">—</span></div>
+      <div class="info-row"><span>CEP</span><span id="oCep">—</span></div>
+      <div class="info-row"><span>Distância estimada</span><span id="oDistancia">—</span></div>
+      <div class="info-row"><span>Cidade detectada</span><span id="oCidade">—</span></div>
+    </div>
+
+    <div class="modal-section">
+      <h4>Serviços Solicitados</h4>
+      <div id="oServicos"></div>
+    </div>
+
+    <div class="modal-section">
+      <h4>Composição do Preço (visível apenas para você)</h4>
+      <div id="oPrecos"></div>
+    </div>
+
+    <div class="modal-section">
+      <h4>Ajuste de Preço Final</h4>
+      <div class="price-adjust" style="width:100%">
+        <label>Valor Final (R$)</label>
+        <input type="number" id="valorFinalAjuste" placeholder="0.00" step="0.01" style="flex:1" />
+        <button class="btn-sm primary" onclick="recalcularTotal()">Recalcular</button>
+      </div>
+      <div class="price-total" style="margin-top:12px">
+        <span>Total do Orçamento</span>
+        <strong id="oTotal">R$ 0,00</strong>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-sm success" onclick="aprovarEEnviar()">✓ Aprovar e Enviar ao Cliente</button>
+      <button class="btn-sm orange" onclick="abrirWhatsCliente()">💬 Falar no WhatsApp</button>
+      <button class="btn-sm secondary" onclick="fecharModalOrc()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Firebase (Realtime Database) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getDatabase, ref, push, set, get, update, remove,
+    query, orderByChild, equalTo, onValue
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBQK22pp_RR1Hfd47rM9jNBiuZRh7DsQpg",
+    authDomain: "higieniza-ai.firebaseapp.com",
+    databaseURL: "https://higieniza-ai-default-rtdb.firebaseio.com",
+    projectId: "higieniza-ai",
+    storageBucket: "higieniza-ai.firebasestorage.app",
+    messagingSenderId: "638607826584",
+    appId: "1:638607826584:web:41dd132f2701abe785baed",
+    measurementId: "G-1S850Z1Y2G"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  window._db = db;
+  window._rtdb = { ref, push, set, get, update, remove, query, orderByChild, equalTo, onValue };
+</script>
+
+<script src="admin.js"></script>
+</body>
+</html>
