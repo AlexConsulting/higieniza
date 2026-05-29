@@ -8,7 +8,38 @@
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
-<body class="admin-body">
+<body>
+
+<!-- TELA DE LOGIN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-circle">h</div>
+      <div class="logo-text">
+        <span class="logo-main">Higieniza Aí</span>
+        <span class="logo-sub">Painel Administrativo</span>
+      </div>
+    </div>
+    <h2 class="login-title">Acesso Restrito</h2>
+    <p class="login-subtitle">Entre com suas credenciais para acessar o painel.</p>
+    <form onsubmit="fazerLogin(event)">
+      <div class="login-field">
+        <label for="loginEmail">E-mail</label>
+        <input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="username" required />
+      </div>
+      <div class="login-field">
+        <label for="loginSenha">Senha</label>
+        <input type="password" id="loginSenha" placeholder="••••••••" autocomplete="current-password" required />
+      </div>
+      <div class="login-erro" id="loginErro"></div>
+      <button type="submit" class="login-btn" id="loginBtn">Entrar</button>
+    </form>
+    <a href="index.html" class="login-back">← Voltar ao site</a>
+  </div>
+</div>
+
+<!-- PAINEL (só aparece após login) -->
+<div id="adminApp" class="admin-body" style="display:none">
 
 <!-- SIDEBAR -->
 <aside class="admin-sidebar" id="adminSidebar">
@@ -68,6 +99,13 @@
         <span class="icon-sun">☀️</span>
         <span class="icon-moon">🌙</span>
       </button>
+      <div class="user-menu">
+        <span class="user-email" id="loggedEmail">—</span>
+        <button class="btn-logout" onclick="fazerLogout()" title="Sair do painel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          Sair
+        </button>
+      </div>
     </div>
   </div>
 
@@ -436,6 +474,8 @@
   </div><!-- /admin-content -->
 </main>
 
+</div><!-- /adminApp -->
+
 <!-- MODAL ORÇAMENTO -->
 <div class="admin-modal-overlay" id="modalOrcamento">
   <div class="admin-modal">
@@ -488,13 +528,16 @@
 <!-- TOAST -->
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- Firebase (Realtime Database) -->
+<!-- Firebase (Realtime Database + Auth) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
     getDatabase, ref, push, set, get, update, remove,
     query, orderByChild, equalTo, onValue
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import {
+    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBQK22pp_RR1Hfd47rM9jNBiuZRh7DsQpg",
@@ -509,8 +552,57 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
+  const auth = getAuth(app);
   window._db = db;
+  window._auth = auth;
   window._rtdb = { ref, push, set, get, update, remove, query, orderByChild, equalTo, onValue };
+  window._authFns = { signInWithEmailAndPassword, signOut, onAuthStateChanged };
+
+  // Controle de acesso: mostra login ou painel conforme estado de autenticação
+  onAuthStateChanged(auth, (user) => {
+    const loginScreen = document.getElementById('loginScreen');
+    const appBody = document.getElementById('adminApp');
+    if (user) {
+      loginScreen.style.display = 'none';
+      appBody.style.display = 'flex';
+      const emailEl = document.getElementById('loggedEmail');
+      if (emailEl) emailEl.textContent = user.email;
+    } else {
+      loginScreen.style.display = 'flex';
+      appBody.style.display = 'none';
+    }
+  });
+
+  // Função de login (chamada pelo formulário)
+  window.fazerLogin = async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const senha = document.getElementById('loginSenha').value;
+    const erroEl = document.getElementById('loginErro');
+    const btn = document.getElementById('loginBtn');
+    erroEl.textContent = '';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Entrando...';
+    try {
+      await signInWithEmailAndPassword(auth, email, senha);
+      // onAuthStateChanged cuida de mostrar o painel
+    } catch (err) {
+      let msg = 'E-mail ou senha incorretos.';
+      if (err.code === 'auth/invalid-email') msg = 'E-mail inválido.';
+      if (err.code === 'auth/too-many-requests') msg = 'Muitas tentativas. Tente mais tarde.';
+      erroEl.textContent = msg;
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Entrar';
+    }
+  };
+
+  // Função de logout
+  window.fazerLogout = async function() {
+    if (confirm('Deseja sair do painel?')) {
+      await signOut(auth);
+    }
+  };
 </script>
 
 <script src="admin.js"></script>

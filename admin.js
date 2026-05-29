@@ -995,11 +995,25 @@ document.querySelectorAll('.period-tab').forEach(tab => {
   });
 });
 
-// INIT
-document.addEventListener('DOMContentLoaded', () => {
+// INIT — só carrega o painel quando o usuário estiver autenticado
+let painelIniciado = false;
+function iniciarPainel() {
+  if (painelIniciado) return;
+  painelIniciado = true;
   carregarConfiguracoes();
   carregarDashboard();
   setTimeout(() => {
     document.querySelectorAll('.page').forEach(p => { if (p.id !== 'page-dashboard') p.style.display = 'none'; });
   }, 100);
-});
+}
+
+// Aguarda o Firebase Auth confirmar o login antes de montar o painel.
+// Verifica periodicamente se a função de auth já está disponível.
+const authWaiter = setInterval(() => {
+  if (window._authFns && window._auth) {
+    clearInterval(authWaiter);
+    window._authFns.onAuthStateChanged(window._auth, (user) => {
+      if (user) iniciarPainel();
+    });
+  }
+}, 150);
