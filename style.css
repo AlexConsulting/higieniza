@@ -6,6 +6,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
 /* VARIABLES */
+/* FONTS */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+
+/* VARIABLES */
 :root {
   --blue: #0D1B6E;
   --blue-mid: #1a2d9e;
