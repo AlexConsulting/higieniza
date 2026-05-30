@@ -293,67 +293,60 @@ function calcularOrcamentoCompleto(orcamento) {
 let orcamentoAtual = null;
 let orcamentoIdAtual = null;
 
-async function carregarOrcamentos() {
+// Chamada ao abrir a aba: usa os dados já sincronizados em memória
+function carregarOrcamentos() {
+  renderTabelaOrcamentos(ORCAMENTOS);
+}
+
+// Desenha a tabela a partir de uma lista de orçamentos (fonte única)
+function renderTabelaOrcamentos(docs) {
   const tbody = document.getElementById('tabelaOrcamentos');
-  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:40px">Carregando...</td></tr>';
+  if (!tbody) return;
 
-  try {
-    const db = window._db;
-    const { ref, get } = window._rtdb;
-    console.log('📋 [LOG] carregarOrcamentos() — buscando no banco...');
-    const snap = await get(ref(db, 'orcamentos'));
-    console.log('📋 [LOG] Existe dados?', snap.exists());
-
-    if (!snap.exists()) {
-      console.log('📋 [LOG] Nó "orcamentos" vazio ou inacessível.');
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:40px">Nenhum orçamento encontrado.</td></tr>';
-      return;
-    }
-
-    // Converter objeto em array com id, ordenar por data desc
-    const docs = [];
-    snap.forEach(c => docs.push({ id: c.key, ...c.val() }));
-    console.log('📋 [LOG] Orçamentos carregados na lista:', docs.length);
-    docs.sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
-
-    tbody.innerHTML = '';
-    docs.forEach(d => {
-      const id = d.id;
-      const calc = calcularOrcamentoCompleto(d);
-      const data = d.criadoEm ? new Date(d.criadoEm).toLocaleDateString('pt-BR') : '—';
-      const servicos = (d.servicos || []).map(s => s.tipo).join(', ');
-      const cidadeLabel = d.endereco?.split(' - ')[1]?.split('/')[0] || '—';
-
-      const statusMap = { novo: 'novo', enviado: 'enviado', confirmado: 'confirmado', concluido: 'concluido' };
-      const statusLabel = { novo: '🔵 Novo', enviado: '🟡 Enviado', confirmado: '🟢 Confirmado', concluido: '⚫ Concluído' };
-
-      tbody.innerHTML += `
-        <tr>
-          <td><strong>${d.numero || '—'}</strong></td>
-          <td>${data}</td>
-          <td>${d.nome}</td>
-          <td style="font-size:0.8rem">${servicos}</td>
-          <td>${cidadeLabel}</td>
-          <td><strong>R$ ${(d.valorFinal || calc.total).toFixed(2).replace('.',',')}</strong></td>
-          <td><span class="status-badge ${statusMap[d.status] || 'novo'}">${statusLabel[d.status] || '🔵 Novo'}</span></td>
-          <td>
-            <div style="display:flex;gap:6px">
-              <button class="btn-sm primary" onclick="abrirOrcamento('${id}')">Ver</button>
-              <button class="btn-sm secondary" onclick="mudarStatus('${id}','concluido')">✓</button>
-            </div>
-          </td>
-        </tr>`;
-    });
-
-    // Atualizar badge
-    const novos = docs.filter(d => d.status === 'novo').length;
-    document.getElementById('badgeCount').textContent = novos;
-
-  } catch(e) {
-    console.error('🔴 [LOG] ERRO no carregarOrcamentos:', e);
-    console.error('🔴 [LOG] Mensagem:', e.message);
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:40px">Erro ao carregar. Verifique o Firebase.</td></tr>';
+  if (!docs || docs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:40px">Nenhum orçamento encontrado.</td></tr>';
+    return;
   }
+
+  // Aplica filtro de status, se selecionado
+  const filtro = document.getElementById('filterStatus')?.value || '';
+  let lista = filtro ? docs.filter(d => d.status === filtro) : docs;
+
+  if (lista.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:40px">Nenhum orçamento com esse status.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  lista.forEach(d => {
+    const id = d.id;
+    const calc = calcularOrcamentoCompleto(d);
+    const data = d.criadoEm ? new Date(d.criadoEm).toLocaleDateString('pt-BR') : '—';
+    const servicos = (d.servicos || []).map(s => s.tipo).join(', ');
+    const cidadeLabel = d.endereco?.split(' - ')[1]?.split('/')[0] || '—';
+
+    const statusMap = { novo: 'novo', enviado: 'enviado', confirmado: 'confirmado', concluido: 'concluido' };
+    const statusLabel = { novo: '🔵 Novo', enviado: '🟡 Enviado', confirmado: '🟢 Confirmado', concluido: '⚫ Concluído' };
+
+    tbody.innerHTML += `
+      <tr>
+        <td><strong>${d.numero || '—'}</strong></td>
+        <td>${data}</td>
+        <td>${d.nome}</td>
+        <td style="font-size:0.8rem">${servicos}</td>
+        <td>${cidadeLabel}</td>
+        <td><strong>R$ ${(d.valorFinal || calc.total).toFixed(2).replace('.',',')}</strong></td>
+        <td><span class="status-badge ${statusMap[d.status] || 'novo'}">${statusLabel[d.status] || '🔵 Novo'}</span></td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn-sm primary" onclick="abrirOrcamento('${id}')">Ver</button>
+            <button class="btn-sm secondary" onclick="mudarStatus('${id}','concluido')">✓</button>
+          </div>
+        </td>
+      </tr>`;
+  });
+  console.log('📋 [LOG] Tabela de orçamentos renderizada com', lista.length, 'itens.');
+
 }
 
 window.abrirOrcamento = async function(id) {
@@ -468,17 +461,14 @@ window.fecharModalOrc = function() {
 let chartReceita, chartServicos, chartCidades, chartMargens;
 
 async function carregarDashboard() {
-  console.log('🔵 [LOG] carregarDashboard() iniciado');
+  // Usa os dados já sincronizados pela escuta em tempo real
+  renderDashboardComDados(ORCAMENTOS);
+}
+
+function renderDashboardComDados(docsEntrada) {
+  console.log('🔵 [LOG] renderDashboardComDados() —', (docsEntrada||[]).length, 'orçamentos');
   try {
-    const db = window._db;
-    const { ref, get } = window._rtdb;
-    console.log('🔵 [LOG] Buscando nó "orcamentos" no banco...');
-    const snap = await get(ref(db, 'orcamentos'));
-    console.log('🔵 [LOG] Resposta recebida. Existe dados?', snap.exists());
-    const docs = [];
-    if (snap.exists()) snap.forEach(c => docs.push({ id: c.key, ...c.val() }));
-    console.log('🔵 [LOG] Total de orçamentos lidos:', docs.length, docs);
-    docs.sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
+    const docs = (docsEntrada || []).slice().sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
 
     const agora = new Date();
     const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
@@ -546,13 +536,11 @@ async function carregarDashboard() {
 
     // Gráficos
     renderGraficos(docs, servicosCount, cidadesCount);
-    console.log('🔵 [LOG] carregarDashboard() concluído COM SUCESSO');
+    console.log('🔵 [LOG] Dashboard renderizado com sucesso —', docs.length, 'orçamentos.');
 
   } catch(e) {
-    console.error('🔴 [LOG] ERRO no carregarDashboard — caindo para modo DEMO:', e);
-    console.error('🔴 [LOG] Mensagem do erro:', e.message);
-    // Demo data para visualização
-    renderGraficosDemoMode();
+    console.error('🔴 [LOG] ERRO ao renderizar dashboard:', e);
+    console.error('🔴 [LOG] Mensagem:', e.message);
   }
 }
 
@@ -841,16 +829,15 @@ async function renderFinanceiro() {
 // =============================================
 // CLIENTES
 // =============================================
-async function carregarClientes() {
+function carregarClientes() {
+  renderTabelaClientes(ORCAMENTOS);
+}
+
+function renderTabelaClientes(docsEntrada) {
   const tbody = document.getElementById('tabelaClientes');
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-mid);padding:40px">Carregando...</td></tr>';
+  if (!tbody) return;
   try {
-    const db = window._db;
-    const { ref, get } = window._rtdb;
-    const snap = await get(ref(db, 'orcamentos'));
-    const docs = [];
-    if (snap.exists()) snap.forEach(c => docs.push(c.val()));
-    docs.sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
+    const docs = (docsEntrada || []).slice().sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
 
     const clientesMap = {};
     docs.forEach(data => {
@@ -879,6 +866,7 @@ async function carregarClientes() {
         </tr>`;
     });
   } catch(e) {
+    console.error('🔴 [LOG] ERRO ao renderizar clientes:', e);
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px">Erro ao carregar clientes.</td></tr>';
   }
 }
@@ -1024,6 +1012,20 @@ document.querySelectorAll('.period-tab').forEach(tab => {
   });
 });
 
+// FILTRO DE STATUS dos orçamentos
+document.getElementById('filterStatus')?.addEventListener('change', () => {
+  renderTabelaOrcamentos(ORCAMENTOS);
+});
+
+// BUSCA de clientes
+document.getElementById('searchCliente')?.addEventListener('input', function() {
+  const termo = this.value.toLowerCase();
+  const filtrados = termo
+    ? ORCAMENTOS.filter(o => (o.nome||'').toLowerCase().includes(termo) || (o.whatsapp||'').includes(termo))
+    : ORCAMENTOS;
+  renderTabelaClientes(filtrados);
+});
+
 // INIT — só carrega o painel quando o usuário estiver autenticado
 let painelIniciado = false;
 function iniciarPainel() {
@@ -1063,6 +1065,9 @@ function tocarSino() {
   } catch(e) {}
 }
 
+// FONTE ÚNICA DE DADOS: sempre atualizada pela escuta em tempo real
+let ORCAMENTOS = [];
+
 function iniciarEscutaTempoReal() {
   console.log('👂 [LOG] iniciarEscutaTempoReal() chamado');
   if (!window._db || !window._rtdb) {
@@ -1074,7 +1079,12 @@ function iniciarEscutaTempoReal() {
   onValue(ref(window._db, 'orcamentos'), (snap) => {
     const docs = [];
     if (snap.exists()) snap.forEach(c => docs.push({ id: c.key, ...c.val() }));
-    console.log('👂 [LOG] Escuta disparou! Orçamentos no banco agora:', docs.length);
+    docs.sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
+
+    // Atualiza a fonte única
+    ORCAMENTOS = docs;
+    console.log('👂 [LOG] Dados sincronizados. Total de orçamentos:', docs.length);
+
     const novos = docs.filter(d => d.status === 'novo').length;
 
     // Atualiza o sininho sempre
@@ -1084,21 +1094,20 @@ function iniciarEscutaTempoReal() {
       badge.style.display = novos > 0 ? 'flex' : 'none';
     }
 
-    // Na primeira carga, apenas memoriza (não alerta retroativo)
+    // Redesenha a tela ativa com os dados frescos
+    renderDashboardComDados(ORCAMENTOS);
+    if (paginaAtual === 'orcamentos') renderTabelaOrcamentos(ORCAMENTOS);
+    if (paginaAtual === 'clientes') renderTabelaClientes(ORCAMENTOS);
+
+    // Detecta pedido novo para alertar (só após a primeira carga)
     if (qtdOrcamentosConhecida === null) {
-      console.log('👂 [LOG] Primeira carga da escuta. Memorizando', docs.length, 'orçamentos.');
+      console.log('👂 [LOG] Primeira carga. Memorizando', docs.length, 'orçamentos.');
       qtdOrcamentosConhecida = docs.length;
       return;
     }
-
-    // Chegou pedido novo desde a última vez?
     if (docs.length > qtdOrcamentosConhecida) {
       console.log('🔔 [LOG] NOVO PEDIDO detectado! Disparando alertas.');
-      const maisRecente = docs.sort((a,b) => (b.criadoEm||0)-(a.criadoEm||0))[0];
-      dispararAlertaNovoPedido(maisRecente);
-      // Atualiza o dashboard e a lista, se aberta
-      carregarDashboard();
-      if (paginaAtual === 'orcamentos') carregarOrcamentos();
+      dispararAlertaNovoPedido(docs[0]);
     }
     qtdOrcamentosConhecida = docs.length;
   }, (err) => {
