@@ -214,7 +214,7 @@ function calcularPrecoServico(servico, cfg) {
       base = (mapSofa[tipo] || p.sofa_3lugares) * qtd;
       break;
     case 'colchao':
-      const mapColchao = { solteiro: p.colchao_solteiro, casal: p.colchao_casal, queen: p.colchao_queen, king: p.colchao_king };
+      const mapColchao = { solteiro: p.colchao_solteiro, colchao_casal: p.colchao_casal, queen: p.colchao_queen, king: p.colchao_king };
       base = (mapColchao[tipo] || p.colchao_casal) * qtd;
       break;
     case 'cadeira':
@@ -449,7 +449,7 @@ async function carregarDashboard() {
 }
 
 function renderDashboardComDados(docsEntrada) {
-  console.log('¼ [LOG] renderDashboardComDados() —', (docsEntrada||[]).length, 'orçamentos');
+  console.log('🔵 [LOG] renderDashboardComDados() —', (docsEntrada||[]).length, 'orçamentos');
   try {
     const docs = (docsEntrada || []).slice().sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
 
@@ -512,11 +512,11 @@ function renderDashboardComDados(docsEntrada) {
 
     renderWeekGrid(docs);
     renderGraficos(docs, servicosCount, cidadesCount);
-    console.log('¼ [LOG] Dashboard renderizado com sucesso —', docs.length, 'orçamentos.');
+    console.log('🔵 [LOG] Dashboard renderizado com sucesso —', docs.length, 'orçamentos.');
 
   } catch(e) {
-    console.error('¼ [LOG] ERRO ao renderizar dashboard:', e);
-    console.error('¼ [LOG] Mensagem:', e.message);
+    console.error('🔴 [LOG] ERRO ao renderizar dashboard:', e);
+    console.error('🔴 [LOG] Mensagem:', e.message);
   }
 }
 
@@ -526,6 +526,7 @@ function renderDashboardComDados(docsEntrada) {
 let qtdOrcamentosConhecida = null;
 let audioLiberado = false;
 let somCargaInicialTocado = false; // Controla se o alerta de pendências iniciais já tocou
+let somPendenteParaTocar = false; // Guarda se um som tentou tocar antes da interação inicial
 
 // Elemento oculto de áudio reaproveitado para burlar a política agressiva do navegador
 let globalAudioElement = null;
@@ -847,7 +848,7 @@ function renderTabelaClientes(docsEntrada) {
         </tr>`;
     });
   } catch(e) {
-    console.error('¼ [LOG] ERRO ao renderizar clientes:', e);
+    console.error('🔴 [LOG] ERRO ao renderizar clientes:', e);
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px">Erro ao carregar clientes.</td></tr>';
   }
 }
@@ -1008,9 +1009,9 @@ let painelIniciado = false;
 function iniciarPainel() {
   if (painelIniciado) return;
   painelIniciado = true;
-  console.log('¼ [LOG] iniciarPainel() chamado — usuário autenticado');
-  console.log('¼ [LOG] window._db existe?', !!window._db);
-  console.log('¼ [LOG] window._rtdb existe?', !!window._rtdb);
+  console.log('🟢 [LOG] iniciarPainel() chamado — usuário autenticado');
+  console.log('🟢 [LOG] window._db existe?', !!window._db);
+  console.log('🟢 [LOG] window._rtdb existe?', !!window._rtdb);
   carregarConfiguracoes();
   carregarDashboard();
   setTimeout(() => {
@@ -1025,7 +1026,7 @@ function iniciarPainel() {
   document.addEventListener(ev, () => { 
     if (!audioLiberado) {
       audioLiberado = true;
-      console.log('¼ [LOG] Contexto de áudio liberado pelo usuário via evento:', ev);
+      console.log('🔊 [LOG] Contexto de áudio liberado pelo usuário via evento:', ev);
       
       // Cria e inicia o áudio silenciosamente uma única vez para abrir o canal de som
       if (!globalAudioElement) {
@@ -1035,6 +1036,13 @@ function iniciarPainel() {
           globalAudioElement.pause();
           globalAudioElement.volume = 1;
           globalAudioElement.loop = true;
+          
+          // Se o Firebase tentou tocar o som antes da interação, tocamos agora!
+          if (somPendenteParaTocar) {
+            console.log('🔔 [LOG] Executando som pendente que havia sido bloqueado anteriormente.');
+            somPendenteParaTocar = false;
+            tocarSino();
+          }
         }).catch(() => {});
       }
     }
@@ -1042,18 +1050,26 @@ function iniciarPainel() {
 });
 
 function tocarSino() {
-  console.log('½ [LOG] Tentando reproduzir som do alerta...');
+  console.log('🔔 [LOG] Tentando reproduzir som do alerta...');
+  
+  // Se o usuário ainda não interagiu, guardamos a intenção de tocar e evitamos o erro do Chrome
+  if (!audioLiberado) {
+    console.log('⏳ [LOG] Som adiado: Aguardando primeira interação do usuário na página.');
+    somPendenteParaTocar = true;
+    return;
+  }
+
   try {
     if (globalAudioElement) {
       globalAudioElement.currentTime = 0;
       globalAudioElement.loop = true;
       globalAudioElement.volume = 1;
       globalAudioElement.play().catch(e => {
-        console.error('¼ [LOG] Falha no play do canal globalizado:', e.message);
+        console.error('🔴 [LOG] Falha no play do canal globalizado:', e.message);
         // Fallback clássico
         const fallbackAudio = new Audio('sino.mp3');
         fallbackAudio.loop = true;
-        fallbackAudio.play().catch(err => console.error('¼ [LOG] Bloqueio total do navegador:', err.message));
+        fallbackAudio.play().catch(err => console.error('🔴 [LOG] Bloqueio total do navegador:', err.message));
         setTimeout(() => { fallbackAudio.pause(); }, 7000);
       });
       
@@ -1063,24 +1079,24 @@ function tocarSino() {
     } else {
       const audio = new Audio('sino.mp3');
       audio.loop = true;
-      audio.play().catch(e => console.error('¼ [LOG] Falha ao tocar áudio autônomo:', e.message));
+      audio.play().catch(e => console.error('🔴 [LOG] Falha ao tocar áudio autônomo:', e.message));
       setTimeout(() => { audio.pause(); }, 7000);
     }
   } catch(e) {
-    console.error('¼ [LOG] Exceção gerada na rotina de áudio:', e);
+    console.error('🔴 [LOG] Exceção gerada na rotina de áudio:', e);
   }
 }
 
 let ORCAMENTOS = [];
 
 function iniciarEscutaTempoReal() {
-  console.log('½ [LOG] iniciarEscutaTempoReal() chamado');
+  console.log('👂 [LOG] iniciarEscutaTempoReal() chamado');
   if (!window._db || !window._rtdb) {
-    console.error('¼ [LOG] _db ou _rtdb não disponível! Escuta não iniciada.');
+    console.error('🔴 [LOG] _db ou _rtdb não disponível! Escuta não iniciada.');
     return;
   }
   const { ref, onValue } = window._rtdb;
-  console.log('½ [LOG] Registrando escuta no nó "orcamentos"...');
+  console.log('👂 [LOG] Registrando escuta no nó "orcamentos"...');
   
   onValue(ref(window._db, 'orcamentos'), (snap) => {
     const docs = [];
@@ -1106,7 +1122,7 @@ function iniciarEscutaTempoReal() {
     docs.sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
 
     ORCAMENTOS = docs;
-    console.log('½ [LOG] Dados sincronizados. Total de orçamentos:', docs.length);
+    console.log('👂 [LOG] Dados sincronizados. Total de orçamentos:', docs.length);
 
     const novos = docs.filter(d => d.status === 'novo').length;
 
@@ -1122,7 +1138,7 @@ function iniciarEscutaTempoReal() {
 
     // Verificação de carga inicial para tocar se houver pendências
     if (qtdOrcamentosConhecida === null) {
-      console.log('½ [LOG] Primeira carga. Memorizando', docs.length, 'orçamentos.');
+      console.log('👂 [LOG] Primeira carga. Memorizando', docs.length, 'orçamentos.');
       qtdOrcamentosConhecida = docs.length;
 
       // Se houver qualquer orçamento com status 'novo' e o som inicial ainda não tocou
@@ -1141,8 +1157,8 @@ function iniciarEscutaTempoReal() {
     }
     qtdOrcamentosConhecida = docs.length;
   }, (err) => {
-    console.error('¼ [LOG] ERRO na escuta em tempo real:', err);
-    console.error('¼ [LOG] Mensagem:', err.message, '— Provável bloqueio nas REGRAS do banco.');
+    console.error('🔴 [LOG] ERRO na escuta em tempo real:', err);
+    console.error('🔴 [LOG] Mensagem:', err.message, '— Provável bloqueio nas REGRAS do banco.');
   });
 }
 
