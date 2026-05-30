@@ -1021,38 +1021,27 @@ function iniciarPainel() {
   prepararNotificacoesPush();
 }
 
-// Escuta ampla em múltiplos eventos para garantir o desbloqueio do contexto de áudio
-['click', 'keydown', 'touchstart', 'mousedown'].forEach(ev => {
+// Escuta ampla em múltiplos eventos para garantir o desbloqueio definitivo do áudio por ação real do usuário
+['click', 'keydown', 'touchstart', 'mousedown', 'mousemove'].forEach(ev => {
   document.addEventListener(ev, () => { 
     if (!audioLiberado) {
       audioLiberado = true;
       console.log('🔊 [LOG] Contexto de áudio liberado pelo usuário via evento:', ev);
       
-      // Cria e inicia o áudio silenciosamente uma única vez para abrir o canal de som
-      if (!globalAudioElement) {
-        globalAudioElement = new Audio('sino.mp3');
-        globalAudioElement.volume = 0.01;
-        globalAudioElement.play().then(() => {
-          globalAudioElement.pause();
-          globalAudioElement.volume = 1;
-          globalAudioElement.loop = true;
-          
-          // Se o Firebase tentou tocar o som antes da interação, tocamos agora!
-          if (somPendenteParaTocar) {
-            console.log('🔔 [LOG] Executando som pendente que havia sido bloqueado anteriormente.');
-            somPendenteParaTocar = false;
-            tocarSino();
-          }
-        }).catch(() => {});
+      // Se houver uma pendência de som ativa na fila, nós recriamos o barulho e forçamos agora!
+      if (somPendenteParaTocar) {
+        console.log('🔔 [LOG] Executando som pendente que havia sido bloqueado anteriormente.');
+        somPendenteParaTocar = false;
+        tocarSino();
       }
     }
-  }, { once: false }); // Mantém ativo para revalidar interações se necessário
+  }, { once: false });
 });
 
 function tocarSino() {
   console.log('🔔 [LOG] Tentando reproduzir som do alerta...');
   
-  // Se o usuário ainda não interagiu, guardamos a intenção de tocar e evitamos o erro do Chrome
+  // Se o usuário ainda não executou nenhuma interação física na página, agendamos o som para o primeiro movimento/clique
   if (!audioLiberado) {
     console.log('⏳ [LOG] Som adiado: Aguardando primeira interação do usuário na página.');
     somPendenteParaTocar = true;
@@ -1060,28 +1049,22 @@ function tocarSino() {
   }
 
   try {
-    if (globalAudioElement) {
-      globalAudioElement.currentTime = 0;
-      globalAudioElement.loop = true;
-      globalAudioElement.volume = 1;
-      globalAudioElement.play().catch(e => {
-        console.error('🔴 [LOG] Falha no play do canal globalizado:', e.message);
-        // Fallback clássico
-        const fallbackAudio = new Audio('sino.mp3');
-        fallbackAudio.loop = true;
-        fallbackAudio.play().catch(err => console.error('🔴 [LOG] Bloqueio total do navegador:', err.message));
-        setTimeout(() => { fallbackAudio.pause(); }, 7000);
+    // Criamos uma instância limpa do áudio em vez de reaproveitar um elemento que pode ter sido quebrado por uma rejeição anterior do Chrome
+    const audioInstance = new Audio('sino.mp3');
+    audioInstance.loop = false; // Toca uma vez completa por chamada de alerta
+    audioInstance.volume = 1;
+    
+    audioInstance.play()
+      .then(() => {
+        console.log('🔊 [LOG] Áudio executado com total sucesso pelo navegador.');
+      })
+      .catch(e => {
+        console.error('🔴 [LOG] Falha no play do canal de áudio limpo:', e.message);
+        // Fallback robusto forçado caso o navegador crie uma nova exceção
+        somPendenteParaTocar = true;
+        audioLiberado = false;
       });
       
-      setTimeout(() => { 
-        if (globalAudioElement) globalAudioElement.pause(); 
-      }, 7000);
-    } else {
-      const audio = new Audio('sino.mp3');
-      audio.loop = true;
-      audio.play().catch(e => console.error('🔴 [LOG] Falha ao tocar áudio autônomo:', e.message));
-      setTimeout(() => { audio.pause(); }, 7000);
-    }
   } catch(e) {
     console.error('🔴 [LOG] Exceção gerada na rotina de áudio:', e);
   }
