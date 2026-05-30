@@ -6,10 +6,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
 /* VARIABLES */
-/* FONTS */
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
-
-/* VARIABLES */
 :root {
   --blue: #0D1B6E;
   --blue-mid: #1a2d9e;
@@ -176,6 +172,14 @@ input, textarea, select, button { font-family: var(--font-body); }
 .logo-main { font-size: 1rem; font-weight: 800; color: var(--blue); }
 .logo-sub { font-size: 0.65rem; font-weight: 400; color: var(--text-mid); margin-top: 2px; }
 [data-theme="dark"] .logo-main { color: var(--white); }
+/* Ajuste para o Logo no Painel Admin */
+.admin-sidebar .logo-main {
+  color: #ffffff !important;
+}
+
+.admin-sidebar .logo-sub {
+  color: #ffffff !important;
+}
 
 .nav-links {
   display: flex;
@@ -1920,19 +1924,4 @@ tr:hover td { background: var(--bg-alt); }
 @media print {
   .admin-sidebar, .admin-topbar, .modal-actions { display: none !important; }
   .admin-main { margin: 0; }
-}
-
-/* Adicione isso ao final do seu style.css para forçar a visibilidade no modo claro */
-[data-theme="light"] {
-  --text: #1a1a2e;        /* Garante que o texto principal seja escuro */
-  --text-mid: #4a4a6a;    /* Garante que textos secundários sejam visíveis */
-  --card-bg: #ffffff;     /* Fundo do card branco */
-  --border: #dde0f5;      /* Borda visível */
-}
-
-/* E force os títulos e textos dentro dos cards a usarem essa cor */
-[data-theme="light"] .card-title, 
-[data-theme="light"] .admin-table th, 
-[data-theme="light"] .admin-table td {
-  color: #1a1a2e !important; 
 }
