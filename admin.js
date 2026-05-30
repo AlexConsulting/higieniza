@@ -184,12 +184,9 @@ window.salvarGeral = function() {
 // CÁLCULO DE PREÇO
 // =============================================
 function calcularDistanciaKm(cepOrigem, cepDestino) {
-  // Simula distância baseada na diferença numérica dos CEPs
-  // Em produção, use Google Maps Distance Matrix API
   const o = parseInt(cepOrigem.replace(/\D/g,'').slice(0,5));
   const d = parseInt(cepDestino.replace(/\D/g,'').slice(0,5));
   const diff = Math.abs(o - d);
-  // Aproximação: cada 100 unidades de diff ≈ 1km
   return Math.max(1, Math.min(80, diff / 80));
 }
 
@@ -232,7 +229,7 @@ function calcularCustoDeslocamento(distanciaKm, cfg) {
   const c = cfg.combustivel;
   const precoComb = c.tipo === 'etanol' ? c.etanol : c.gasolina;
   const custoPorKm = precoComb / c.kmL;
-  return custoPorKm * distanciaKm * 2; // ida e volta
+  return custoPorKm * distanciaKm * 2;
 }
 
 function calcularOrcamentoCompleto(orcamento) {
@@ -251,7 +248,6 @@ function calcularOrcamentoCompleto(orcamento) {
     totalServicos += val;
   });
 
-  // Adicional por distância
   const c = cfg.combustivel;
   let adicionalKmPct = 0;
   if (distancia <= 10) adicionalKmPct = c.adicional_10km;
@@ -260,18 +256,13 @@ function calcularOrcamentoCompleto(orcamento) {
 
   const adicionalKm = totalServicos * adicionalKmPct / 100;
 
-  // Adicional por cidade
   const addCidadePct = cidade === 'santoandre' ? cfg.cidades.santoandre : cidade === 'saocaetano' ? cfg.cidades.saocaetano : cfg.cidades.outras;
   const adicionalCidade = totalServicos * addCidadePct / 100;
 
-  // Custo deslocamento (interno)
   const custoDesl = calcularCustoDeslocamento(distancia, cfg);
 
-  // Desconto cupom
   let desconto = 0;
   if (orcamento.cupom) {
-    const pctMap = { 5: 0.05, 7: 0.07, 10: 0.10 };
-    // Tenta buscar desconto do cupom no storage
     const cupons = JSON.parse(localStorage.getItem('higieniza_cupons') || '[]');
     const cupomObj = cupons.find(c => c.codigo === orcamento.cupom);
     if (cupomObj) desconto = totalServicos * (cupomObj.desconto / 100);
@@ -293,12 +284,10 @@ function calcularOrcamentoCompleto(orcamento) {
 let orcamentoAtual = null;
 let orcamentoIdAtual = null;
 
-// Chamada ao abrir a aba: usa os dados já sincronizados em memória
 function carregarOrcamentos() {
   renderTabelaOrcamentos(ORCAMENTOS);
 }
 
-// Desenha a tabela a partir de uma lista de orçamentos (fonte única)
 function renderTabelaOrcamentos(docs) {
   const tbody = document.getElementById('tabelaOrcamentos');
   if (!tbody) return;
@@ -308,7 +297,6 @@ function renderTabelaOrcamentos(docs) {
     return;
   }
 
-  // Aplica filtro de status, se selecionado
   const filtro = document.getElementById('filterStatus')?.value || '';
   let lista = filtro ? docs.filter(d => d.status === filtro) : docs;
 
@@ -325,7 +313,7 @@ function renderTabelaOrcamentos(docs) {
     const servicos = (d.servicos || []).map(s => s.tipo).join(', ');
     const cidadeLabel = d.endereco?.split(' - ')[1]?.split('/')[0] || '—';
 
-    const statusMap = { novo: 'novo', enviado: 'enviado', confirmado: 'confirmado', concluido: 'concluido' };
+    const statusMap = { novo: 'novo', enviado: 'enviado', confirmed: 'confirmado', concluido: 'concluido' };
     const statusLabel = { novo: '🔵 Novo', enviado: '🟡 Enviado', confirmado: '🟢 Confirmado', concluido: '⚫ Concluído' };
 
     tbody.innerHTML += `
@@ -346,7 +334,6 @@ function renderTabelaOrcamentos(docs) {
       </tr>`;
   });
   console.log('📋 [LOG] Tabela de orçamentos renderizada com', lista.length, 'itens.');
-
 }
 
 window.abrirOrcamento = async function(id) {
@@ -369,12 +356,10 @@ window.abrirOrcamento = async function(id) {
     document.getElementById('oDistancia').textContent = `≈ ${calc.distancia.toFixed(1)} km`;
     document.getElementById('oCidade').textContent = calc.cidade === 'santoandre' ? 'Santo André (+5%)' : calc.cidade === 'saocaetano' ? 'São Caetano do Sul (+10%)' : 'Outras';
 
-    // Serviços
     document.getElementById('oServicos').innerHTML = (d.servicos || []).map(s =>
       `<div class="info-row"><span>${s.tipo} — ${s.subtipo}</span><span>Qtd: ${s.quantidade}</span></div>`
     ).join('');
 
-    // Breakdown de preços
     let precosHTML = '';
     calc.breakdown.forEach(b => {
       precosHTML += `<div class="price-row"><div class="info-row" style="margin:0"><span>${b.label} (x${b.qtd})</span><span>R$ ${b.valor.toFixed(2).replace('.',',')}</span></div></div>`;
@@ -411,7 +396,6 @@ window.aprovarEEnviar = async function() {
       valorFinal
     });
 
-    // Montar mensagem para cliente
     const d = orcamentoAtual;
     const servicos = (d.servicos || []).map(s => `• ${s.tipo} (${s.subtipo}) x${s.quantidade}`).join('\n');
     const linkAgendar = `${window.location.origin}/agendar.html?id=${orcamentoIdAtual}`;
@@ -446,7 +430,7 @@ window.mudarStatus = async function(id, status) {
     const db = window._db;
     const { ref, update } = window._rtdb;
     await update(ref(db, `orcamentos/${id}`), { status });
-    toast('Status atualizado! ✓', 'success');
+    toast('Status updated! ✓', 'success');
     carregarOrcamentos();
   } catch(e) { toast('Erro ao atualizar.', 'error'); }
 };
@@ -461,7 +445,6 @@ window.fecharModalOrc = function() {
 let chartReceita, chartServicos, chartCidades, chartMargens;
 
 async function carregarDashboard() {
-  // Usa os dados já sincronizados pela escuta em tempo real
   renderDashboardComDados(ORCAMENTOS);
 }
 
@@ -495,11 +478,10 @@ function renderDashboardComDados(docsEntrada) {
 
       (d.servicos || []).forEach(s => { if (servicosCount[s.tipo] !== undefined) servicosCount[s.tipo]++; });
 
-      const cidadeLabel = d.endereco?.split(' - ')[1]?.split('/')[0] || 'Outras';
-      cidadesCount[cidadeLabel] = (cidadesCount[cidadeLabel] || 0) + 1;
+      const city = d.endereco?.split(' - ')[1]?.split('/')[0] || 'Outras';
+      cidadesCount[city] = (cidadesCount[city] || 0) + 1;
     });
 
-    // KPIs
     document.getElementById('kpiHoje').textContent = `R$ ${receitaHoje.toFixed(0)}`;
     document.getElementById('kpiSemana').textContent = `R$ ${receitaSemana.toFixed(0)}`;
     document.getElementById('kpiMes').textContent = `R$ ${receitaMes.toFixed(0)}`;
@@ -511,7 +493,6 @@ function renderDashboardComDados(docsEntrada) {
     document.getElementById('metaFill').style.width = `${pct}%`;
     document.getElementById('metaLabel').textContent = `${pct}% da meta de R$ ${meta.toLocaleString('pt-BR')}`;
 
-    // Projeção
     const diasPassados = agora.getDate();
     const diasMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0).getDate();
     const projecao = diasPassados > 0 ? (receitaMes / diasPassados) * diasMes : 0;
@@ -520,10 +501,8 @@ function renderDashboardComDados(docsEntrada) {
     document.getElementById('agPendentes').textContent = agPendentes;
     document.getElementById('custoKm').textContent = `R$ ${custoTotalKm.toFixed(0)}`;
 
-    // Alertas
     renderAlertas(docs);
 
-    // Atualiza o sininho com o total de orçamentos novos (não só os de 24h)
     const totalNovos = docs.filter(d => d.status === 'novo').length;
     const badge = document.getElementById('badgeCount');
     if (badge) {
@@ -531,10 +510,7 @@ function renderDashboardComDados(docsEntrada) {
       badge.style.display = totalNovos > 0 ? 'flex' : 'none';
     }
 
-    // Semana
     renderWeekGrid(docs);
-
-    // Gráficos
     renderGraficos(docs, servicosCount, cidadesCount);
     console.log('🔵 [LOG] Dashboard renderizado com sucesso —', docs.length, 'orçamentos.');
 
@@ -596,7 +572,6 @@ function renderGraficos(docs, servicosCount, cidadesCount) {
 
   Chart.defaults.color = textColor;
 
-  // RECEITA (últimos 7 dias)
   const labels7 = [];
   const values7 = [];
   for (let i = 6; i >= 0; i--) {
@@ -639,7 +614,6 @@ function renderGraficos(docs, servicosCount, cidadesCount) {
     });
   }
 
-  // SERVIÇOS DONUT
   const ctxS = document.getElementById('chartServicos');
   if (ctxS) {
     if (chartServicos) chartServicos.destroy();
@@ -660,7 +634,6 @@ function renderGraficos(docs, servicosCount, cidadesCount) {
     });
   }
 
-  // CIDADES
   const ctxC = document.getElementById('chartCidades');
   if (ctxC) {
     if (chartCidades) chartCidades.destroy();
@@ -688,7 +661,6 @@ function renderGraficos(docs, servicosCount, cidadesCount) {
     });
   }
 
-  // MARGENS
   const ctxM = document.getElementById('chartMargens');
   if (ctxM) {
     if (chartMargens) chartMargens.destroy();
@@ -786,7 +758,6 @@ async function renderFinanceiro() {
   const gridColor = isDark ? '#1e2545' : '#dde0f5';
   Chart.defaults.color = isDark ? '#9ea3c8' : '#4a4a6a';
 
-  // Demo data
   const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const receitas = [4200,3800,5600,6100,4900,7200,6800,5400,8100,7600,6900,8400];
   const custos = [280,310,420,380,350,510,490,380,560,520,480,580];
@@ -979,7 +950,6 @@ window.selecionarDia = function(dia) {
 window.exportarRelatorio = function() {
   toast('Gerando relatório...', 'info');
   const linha = ['Numero,Data,Cliente,WhatsApp,Servicos,Valor,Status'];
-  // Demo
   linha.push('ORC-0001,01/06/2025,João Silva,(11)99999-1111,sofa,150.00,confirmado');
   const csv = linha.join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1004,7 +974,6 @@ function toast(msg, type = 'info') {
 }
 window.toast = toast;
 
-// PERIOD TABS
 document.querySelectorAll('.period-tab').forEach(tab => {
   tab.addEventListener('click', function() {
     document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'));
@@ -1012,12 +981,10 @@ document.querySelectorAll('.period-tab').forEach(tab => {
   });
 });
 
-// FILTRO DE STATUS dos orçamentos
 document.getElementById('filterStatus')?.addEventListener('change', () => {
   renderTabelaOrcamentos(ORCAMENTOS);
 });
 
-// BUSCA de clientes
 document.getElementById('searchCliente')?.addEventListener('input', function() {
   const termo = this.value.toLowerCase();
   const filtrados = termo
@@ -1026,7 +993,7 @@ document.getElementById('searchCliente')?.addEventListener('input', function() {
   renderTabelaClientes(filtrados);
 });
 
-// INIT — só carrega o painel quando o usuário estiver autenticado
+// INIT
 let painelIniciado = false;
 function iniciarPainel() {
   if (painelIniciado) return;
@@ -1046,26 +1013,63 @@ function iniciarPainel() {
 // =============================================
 // ALERTAS EM TEMPO REAL (som + visual + push)
 // =============================================
-let qtdOrcamentosConhecida = null;  // controla o que já vimos
+let qtdOrcamentosConhecida = null;
 let audioLiberado = false;
 
-// Libera o áudio após a primeira interação do usuário (exigência dos navegadores)
-['click','keydown','touchstart'].forEach(ev => {
-  document.addEventListener(ev, () => { audioLiberado = true; }, { once: true });
+// Elemento oculto de áudio reaproveitado para burlar a política agressiva do navegador
+let globalAudioElement = null;
+
+// Escuta ampla em múltiplos eventos para garantir o desbloqueio do contexto de áudio
+['click', 'keydown', 'touchstart', 'mousedown'].forEach(ev => {
+  document.addEventListener(ev, () => { 
+    if (!audioLiberado) {
+      audioLiberado = true;
+      console.log('🔊 [LOG] Contexto de áudio liberado pelo usuário via evento:', ev);
+      
+      // Cria e inicia o áudio silenciosamente uma única vez para abrir o canal de som
+      if (!globalAudioElement) {
+        globalAudioElement = new Audio('sino.mp3');
+        globalAudioElement.volume = 0.01;
+        globalAudioElement.play().then(() => {
+          globalAudioElement.pause();
+          globalAudioElement.volume = 1;
+          globalAudioElement.loop = true;
+        }).catch(() => {});
+      }
+    }
+  }, { once: false }); // Mantém ativo para revalidar interações se necessário
 });
 
 function tocarSino() {
-  // Toca o som do sininho por até ~7 segundos
+  console.log('🔔 [LOG] Tentando reproduzir som do alerta...');
   try {
-    const audio = new Audio('sino.mp3');
-    audio.loop = true;
-    audio.play().catch(() => {});
-    // Para após 7 segundos
-    setTimeout(() => { audio.pause(); audio.currentTime = 0; }, 7000);
-  } catch(e) {}
+    if (globalAudioElement) {
+      globalAudioElement.currentTime = 0;
+      globalAudioElement.loop = true;
+      globalAudioElement.volume = 1;
+      globalAudioElement.play().catch(e => {
+        console.error('🔴 [LOG] Falha no play do canal globalizado:', e.message);
+        // Fallback clássico
+        const fallbackAudio = new Audio('sino.mp3');
+        fallbackAudio.loop = true;
+        fallbackAudio.play().catch(err => console.error('🔴 [LOG] Bloqueio total do navegador:', err.message));
+        setTimeout(() => { fallbackAudio.pause(); }, 7000);
+      });
+      
+      setTimeout(() => { 
+        if (globalAudioElement) globalAudioElement.pause(); 
+      }, 7000);
+    } else {
+      const audio = new Audio('sino.mp3');
+      audio.loop = true;
+      audio.play().catch(e => console.error('🔴 [LOG] Falha ao tocar áudio autônomo:', e.message));
+      setTimeout(() => { audio.pause(); }, 7000);
+    }
+  } catch(e) {
+    console.error('🔴 [LOG] Exceção gerada na rotina de áudio:', e);
+  }
 }
 
-// FONTE ÚNICA DE DADOS: sempre atualizada pela escuta em tempo real
 let ORCAMENTOS = [];
 
 function iniciarEscutaTempoReal() {
@@ -1082,8 +1086,6 @@ function iniciarEscutaTempoReal() {
     
     if (snap.exists()) {
       const dadosBrutos = snap.val();
-      
-      // Se o Firebase retornar como um Objeto de mapeamento padrão (Chave -> Valor)
       if (dadosBrutos && typeof dadosBrutos === 'object') {
         Object.entries(dadosBrutos).forEach(([key, value]) => {
           if (value) {
@@ -1091,7 +1093,6 @@ function iniciarEscutaTempoReal() {
           }
         });
       } 
-      // Fallback de segurança para o caso do nó estar indexado como Array pura
       else if (Array.isArray(dadosBrutos)) {
         dadosBrutos.forEach((value, index) => {
           if (value) {
@@ -1103,25 +1104,21 @@ function iniciarEscutaTempoReal() {
 
     docs.sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
 
-    // Atualiza a fonte única
     ORCAMENTOS = docs;
     console.log('👂 [LOG] Dados sincronizados. Total de orçamentos:', docs.length);
 
     const novos = docs.filter(d => d.status === 'novo').length;
 
-    // Atualiza o sininho sempre
     const badge = document.getElementById('badgeCount');
     if (badge) {
       badge.textContent = novos;
       badge.style.display = novos > 0 ? 'flex' : 'none';
     }
 
-    // Redesenha a tela ativa com os dados frescos
     renderDashboardComDados(ORCAMENTOS);
     if (paginaAtual === 'orcamentos') renderTabelaOrcamentos(ORCAMENTOS);
     if (paginaAtual === 'clientes') renderTabelaClientes(ORCAMENTOS);
 
-    // Detecta pedido novo para alertar (só após a primeira carga)
     if (qtdOrcamentosConhecida === null) {
       console.log('👂 [LOG] Primeira carga. Memorizando', docs.length, 'orçamentos.');
       qtdOrcamentosConhecida = docs.length;
@@ -1139,22 +1136,16 @@ function iniciarEscutaTempoReal() {
 }
 
 function dispararAlertaNovoPedido(pedido) {
-  // 1. Som do sininho
   tocarSino();
 
-  // 2. Aviso visual (toast) clicável
   const nome = pedido?.nome || 'Cliente';
   const num = pedido?.numero || '';
   toast(`🔔 Novo orçamento de ${nome}! ${num}`, 'info');
 
-  // 3. Notificação push do navegador
   enviarPush('Novo orçamento recebido!', `${nome} ${num} — toque para ver.`);
-
-  // 4. Pisca o título da aba (chama atenção se estiver em outra aba)
   piscarTitulo();
 }
 
-// Pisca o título da aba do navegador
 let tituloOriginal = document.title;
 let piscaInterval = null;
 function piscarTitulo() {
@@ -1164,7 +1155,6 @@ function piscarTitulo() {
     document.title = visivel ? '🔔 NOVO PEDIDO!' : tituloOriginal;
     visivel = !visivel;
   }, 1000);
-  // Para de piscar quando o usuário volta para a aba
   window.addEventListener('focus', pararPisca, { once: true });
   setTimeout(pararPisca, 20000);
 }
@@ -1178,7 +1168,6 @@ function pararPisca() {
 function prepararNotificacoesPush() {
   if (!('Notification' in window)) return;
   if (Notification.permission === 'default') {
-    // Pede permissão de forma amigável após 3 segundos
     setTimeout(() => {
       Notification.requestPermission();
     }, 3000);
@@ -1197,15 +1186,13 @@ function enviarPush(titulo, corpo) {
   } catch(e) {}
 }
 
-// Aguarda o Firebase Auth confirmar o login antes de montar o painel.
-// Verifica periodicamente se a função de auth já está disponível.
 console.log('⏳ [LOG] Aguardando Firebase Auth ficar disponível...');
 let authTentativas = 0;
 const authWaiter = setInterval(() => {
   authTentativas++;
   if (window._authFns && window._auth) {
     clearInterval(authWaiter);
-    console.log('⏳ [LOG] Firebase Auth disponível após', authTentativas, 'tentativas. Registrando listener...');
+    console.log('⏳ [LOG] Firebase Auth disponível após', authTentativas, 'tentativas. Registrando listener... convocando painel.');
     window._authFns.onAuthStateChanged(window._auth, (user) => {
       console.log('🔑 [LOG] onAuthStateChanged disparou. Usuário logado?', !!user, user ? user.email : '(nenhum)');
       if (user) iniciarPainel();
