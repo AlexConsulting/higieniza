@@ -1810,6 +1810,25 @@ tr:hover td { background: var(--bg-alt); }
   border-color: var(--blue);
   box-shadow: 0 0 0 3px rgba(13,27,110,0.08);
 }
+.senha-wrap { position: relative; display: flex; }
+.senha-wrap input { flex: 1; padding-right: 46px; }
+.senha-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-light);
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: color var(--transition), background var(--transition);
+}
+.senha-toggle:hover { color: var(--blue); background: var(--bg-alt); }
 .login-erro {
   color: #ef4444;
   font-size: 0.82rem;

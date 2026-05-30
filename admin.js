@@ -92,8 +92,8 @@ function getConfig() {
     cidades: { santoandre: 5, saocaetano: 10, outras: 0 },
     geral: {
       meta_mensal: 5000,
-      admin_whats: '5511999999999',
-      empresa_whats: '5511999999999',
+      admin_whats: '5511992067073',
+      empresa_whats: '5511992067073',
       sede_cep: '09361250',
       horarios: '08:00,09:00,10:00,11:00,13:00,14:00,15:00,16:00,17:00'
     }

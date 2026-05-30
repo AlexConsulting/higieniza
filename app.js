@@ -296,7 +296,7 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
     await push(ref(db, 'orcamentos'), pedido);
 
     // Notificar admin via WhatsApp (substitua pelo número do admin)
-    const adminWhats = '5511999999999';
+    const adminWhats = '5511992067073';
     const msg = encodeURIComponent(
       `🔔 *Novo Pedido de Orçamento!*\n\n` +
       `📋 *Número:* ${pedido.numero}\n` +
