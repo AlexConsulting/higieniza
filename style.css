@@ -1024,6 +1024,18 @@ input, textarea, select, button { font-family: var(--font-body); }
   min-height: 100vh;
   background: var(--bg);
 }
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(2px);
+  z-index: 150;
+}
+.sidebar-overlay.show { display: block; }
+@media (min-width: 769px) {
+  .sidebar-overlay { display: none !important; }
+}
 .admin-sidebar {
   width: 260px;
   background: var(--blue);
@@ -1699,8 +1711,8 @@ tr:hover td { background: var(--bg-alt); }
   .steps-grid { flex-direction: column; align-items: stretch; }
   .step-arrow { display: none; }
   .step-card { max-width: 100%; }
-  .admin-sidebar { transform: translateX(-100%); }
-  .admin-sidebar.open { transform: translateX(0); }
+  .admin-sidebar { transform: translateX(-100%); z-index: 200; }
+  .admin-sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,0.4); }
   .admin-main { margin-left: 0; }
   .dashboard-grid { grid-template-columns: 1fr 1fr; }
   .week-grid { grid-template-columns: repeat(4, 1fr); }

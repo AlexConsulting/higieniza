@@ -81,6 +81,9 @@
   <div class="sidebar-footer">v1.0 · Higieniza Aí</div>
 </aside>
 
+<!-- Overlay para fechar o menu no celular -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <!-- MAIN -->
 <main class="admin-main">
   <!-- TOPBAR -->
@@ -92,7 +95,7 @@
       <h1 id="pageTitle">Dashboard</h1>
     </div>
     <div class="topbar-actions">
-      <button class="badge-notif" id="notifBtn" title="Notificações">
+      <button class="badge-notif" id="notifBtn" title="Ver orçamentos novos" onclick="navegarPara('orcamentos')">
         🔔 <span class="badge-count" id="badgeCount">0</span>
       </button>
       <button class="theme-toggle" id="themeToggleAdmin">

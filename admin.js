@@ -14,9 +14,15 @@ document.getElementById('themeToggleAdmin')?.addEventListener('click', () => {
 });
 
 // SIDEBAR MOBILE
+function abrirMenu() { document.getElementById('adminSidebar').classList.add('open'); document.getElementById('sidebarOverlay')?.classList.add('show'); }
+function fecharMenu() { document.getElementById('adminSidebar').classList.remove('open'); document.getElementById('sidebarOverlay')?.classList.remove('show'); }
+window.fecharMenu = fecharMenu;
+
 document.getElementById('sidebarToggle')?.addEventListener('click', () => {
-  document.getElementById('adminSidebar').classList.toggle('open');
+  const sb = document.getElementById('adminSidebar');
+  if (sb.classList.contains('open')) fecharMenu(); else abrirMenu();
 });
+document.getElementById('sidebarOverlay')?.addEventListener('click', fecharMenu);
 if (window.innerWidth <= 768) {
   document.getElementById('sidebarToggle').style.display = 'flex';
 }
@@ -28,12 +34,14 @@ document.querySelectorAll('[data-page]').forEach(link => {
     e.preventDefault();
     const page = link.dataset.page;
     navegarPara(page);
+    if (window.innerWidth <= 768) fecharMenu();
   });
 });
 document.querySelectorAll('.nav-page-link').forEach(link => {
   link.addEventListener('click', (e) => {
     e.preventDefault();
     navegarPara(link.dataset.page);
+    if (window.innerWidth <= 768) fecharMenu();
   });
 });
 
@@ -61,6 +69,7 @@ function navegarPara(page) {
   if (page === 'cupons') carregarCupons();
   if (page === 'configuracoes') carregarConfiguracoes();
 }
+window.navegarPara = navegarPara;
 
 // =============================================
 // CONFIGURAÇÕES (preços, combustível, etc.)
@@ -514,6 +523,14 @@ async function carregarDashboard() {
     // Alertas
     renderAlertas(docs);
 
+    // Atualiza o sininho com o total de orçamentos novos (não só os de 24h)
+    const totalNovos = docs.filter(d => d.status === 'novo').length;
+    const badge = document.getElementById('badgeCount');
+    if (badge) {
+      badge.textContent = totalNovos;
+      badge.style.display = totalNovos > 0 ? 'flex' : 'none';
+    }
+
     // Semana
     renderWeekGrid(docs);
 
@@ -535,10 +552,10 @@ function renderAlertas(docs) {
     const data = d.criadoEm ? new Date(d.criadoEm) : null;
     return data && (Date.now() - data.getTime()) < 86400000 && d.status === 'novo';
   });
-  if (novos24h.length > 0) alertas.push(`<div class="alert-banner danger">🔴 <strong>${novos24h.length} orçamento(s)</strong> novo(s) aguardando resposta nas últimas 24h.</div>`);
+  if (novos24h.length > 0) alertas.push(`<div class="alert-banner danger" onclick="navegarPara('orcamentos')" style="cursor:pointer">🔴 <strong>${novos24h.length} orçamento(s)</strong> novo(s) aguardando resposta nas últimas 24h. <span style="margin-left:auto;color:var(--blue);font-weight:600;white-space:nowrap">Ver →</span></div>`);
 
   const pendentes = docs.filter(d => d.status === 'novo' && d.criadoEm && (Date.now() - new Date(d.criadoEm).getTime()) > 86400000);
-  if (pendentes.length > 0) alertas.push(`<div class="alert-banner warning">🟡 <strong>${pendentes.length} orçamento(s)</strong> sem resposta há mais de 24h. Considere ativar um cupom.</div>`);
+  if (pendentes.length > 0) alertas.push(`<div class="alert-banner warning" onclick="navegarPara('orcamentos')" style="cursor:pointer">🟡 <strong>${pendentes.length} orçamento(s)</strong> sem resposta há mais de 24h. Considere ativar um cupom. <span style="margin-left:auto;color:var(--blue);font-weight:600;white-space:nowrap">Ver →</span></div>`);
 
   area.innerHTML = alertas.join('') + (alertas.length ? '<div style="margin-bottom:20px"></div>' : '');
 }
