@@ -760,7 +760,7 @@ function atualizarGraficos() {
 }
 
 // =============================================
-// FINANCEIRO
+// FINANCEIRO (ATUALIZADO PARA DADOS REAIS)
 // =============================================
 let chartFinanceiro, chartTicket;
 
@@ -769,15 +769,32 @@ async function renderFinanceiro() {
   const gridColor = isDark ? '#1e2545' : '#dde0f5';
   Chart.defaults.color = isDark ? '#9ea3c8' : '#4a4a6a';
 
-  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const receitas = [4200,3800,5600,6100,4900,7200,6800,5400,8100,7600,6900,8400];
-  const custos = [280,310,420,380,350,510,490,380,560,520,480,580];
+  // 1. FILTRAR DADOS REAIS: Apenas confirmados
+  const confirmados = ORCAMENTOS.filter(o => o.status === 'confirmado' || o.status === 'confirmed');
 
-  document.getElementById('finTotal').textContent = `R$ ${receitas.reduce((a,b)=>a+b,0).toLocaleString('pt-BR')}`;
-  document.getElementById('finCusto').textContent = `R$ ${custos.reduce((a,b)=>a+b,0).toLocaleString('pt-BR')}`;
-  document.getElementById('finMargem').textContent = `R$ ${(receitas.reduce((a,b)=>a+b,0) - custos.reduce((a,b)=>a+b,0)).toLocaleString('pt-BR')}`;
-  document.getElementById('finCupons').textContent = `R$ 840`;
+  // 2. PREPARAR DADOS PARA O GRÁFICO (12 meses)
+  const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  const receitas = new Array(12).fill(0);
+  const custos = new Array(12).fill(0); // Você pode ajustar a lógica de custo aqui
 
+  confirmados.forEach(o => {
+    if (o.dataAgendada) {
+      const mesIndex = new Date(o.dataAgendada).getMonth();
+      receitas[mesIndex] += parseFloat(o.valorFinal || 0);
+      custos[mesIndex] += (parseFloat(o.valorFinal || 0) * 0.15); // Exemplo: custo de 15%
+    }
+  });
+
+  const totalReceita = receitas.reduce((a, b) => a + b, 0);
+  const totalCusto = custos.reduce((a, b) => a + b, 0);
+
+  // 3. ATUALIZAR CARDS NO HTML
+  document.getElementById('finTotal').textContent = `R$ ${totalReceita.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+  document.getElementById('finCusto').textContent = `R$ ${totalCusto.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+  document.getElementById('finMargem').textContent = `R$ ${(totalReceita - totalCusto).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+  document.getElementById('finCupons').textContent = `R$ 0,00`; // Ajuste se houver lógica de cupons
+
+  // 4. ATUALIZAR GRÁFICO FINANCEIRO
   const ctxF = document.getElementById('chartFinanceiro');
   if (ctxF) {
     if (chartFinanceiro) chartFinanceiro.destroy();
@@ -794,14 +811,29 @@ async function renderFinanceiro() {
     });
   }
 
+  // 5. ATUALIZAR TICKET MÉDIO POR SERVIÇO
   const ctxT = document.getElementById('chartTicket');
   if (ctxT) {
+    // Agrupar por tipo de serviço
+    const stats = {};
+    confirmados.forEach(o => {
+      (o.servicos || []).forEach(s => {
+        if (!stats[s.tipo]) stats[s.tipo] = { total: 0, qtd: 0 };
+        stats[s.tipo].total += parseFloat(o.valorFinal || 0);
+        stats[s.tipo].qtd += 1;
+      });
+    });
+
+    const labels = Object.keys(stats);
+    const dados = labels.map(l => (stats[l].total / stats[l].qtd).toFixed(2));
+    const cores = ['#0D1B6E', '#E8521A', '#2a3fb5', '#ff8c42', '#34d399'];
+
     if (chartTicket) chartTicket.destroy();
     chartTicket = new Chart(ctxT, {
       type: 'bar',
       data: {
-        labels: ['Veículo', 'Sofá', 'Colchão', 'Cadeira'],
-        datasets: [{ label: 'Ticket Médio (R$)', data: [195, 165, 145, 75], backgroundColor: ['#0D1B6E','#E8521A','#2a3fb5','#ff8c42'], borderRadius: 8 }]
+        labels: labels,
+        datasets: [{ label: 'Ticket Médio (R$)', data: dados, backgroundColor: cores, borderRadius: 8 }]
       },
       options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridColor }, ticks: { callback: v => `R$ ${v}` } }, y: { grid: { display: false } } } }
     });
