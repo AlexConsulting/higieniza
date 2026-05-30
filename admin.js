@@ -1076,9 +1076,31 @@ function iniciarEscutaTempoReal() {
   }
   const { ref, onValue } = window._rtdb;
   console.log('👂 [LOG] Registrando escuta no nó "orcamentos"...');
+  
   onValue(ref(window._db, 'orcamentos'), (snap) => {
     const docs = [];
-    if (snap.exists()) snap.forEach(c => docs.push({ id: c.key, ...c.val() }));
+    
+    if (snap.exists()) {
+      const dadosBrutos = snap.val();
+      
+      // Se o Firebase retornar como um Objeto de mapeamento padrão (Chave -> Valor)
+      if (dadosBrutos && typeof dadosBrutos === 'object') {
+        Object.entries(dadosBrutos).forEach(([key, value]) => {
+          if (value) {
+            docs.push({ id: key, ...value });
+          }
+        });
+      } 
+      // Fallback de segurança para o caso do nó estar indexado como Array pura
+      else if (Array.isArray(dadosBrutos)) {
+        dadosBrutos.forEach((value, index) => {
+          if (value) {
+            docs.push({ id: index.toString(), ...value });
+          }
+        });
+      }
+    }
+
     docs.sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
 
     // Atualiza a fonte única
