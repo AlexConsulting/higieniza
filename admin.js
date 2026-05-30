@@ -1212,3 +1212,115 @@ const authWaiter = setInterval(() => {
     console.error('🔴 [LOG] Firebase Auth NUNCA ficou disponível após 6s. Verifique os imports no admin.html.');
   }
 }, 150);
+
+// =============================================================================
+// FUNÇÕES DO MENU AGENDA - EXIBIÇÃO DE AGENDAMENTOS APROVADOS/CONFIRMADOS
+// =============================================================================
+
+window.renderAdminCalendar = function() {
+  console.log('📅 [LOG] Executando renderAdminCalendar()...');
+  const agendaContainer = document.getElementById('page-agenda');
+  if (!agendaContainer) return;
+
+  // Filtra da lista global ORCAMENTOS todos que possuem status 'confirmado'
+  // Adicionamos também o suporte para 'confirmed' ou 'concluido' caso queira exibir o histórico
+  const agendamentosConfirmados = ORCAMENTOS.filter(d => 
+    d.status === 'confirmado' || d.status === 'confirmed'
+  );
+
+  console.log(`📅 [LOG] Encontrados ${agendamentosConfirmados.length} agendamentos confirmados.`);
+
+  // Localiza ou cria a área de listagem/grid dentro da página de agenda
+  let agendaListaHtml = agendaContainer.querySelector('.agenda-lista-records');
+  
+  if (!agendaListaHtml) {
+    // Se não houver uma div apropriada dentro do seu HTML de agenda, limpamos o container e criamos uma estrutura limpa e profissional
+    agendaContainer.innerHTML = `
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-header">
+          <h3 class="card-title">📅 Compromissos Confirmados</h3>
+        </div>
+        <div class="agenda-lista-records" style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+          </div>
+      </div>
+    `;
+    agendaListaHtml = agendaContainer.querySelector('.agenda-lista-records');
+  }
+
+  if (agendamentosConfirmados.length === 0) {
+    agendaListaHtml.innerHTML = `<div style="text-align:center; color:var(--text-mid); padding:40px;">Nenhum agendamento confirmado localizado no banco de dados.</div>`;
+    return;
+  }
+
+  // Ordena os agendamentos pela data (os mais próximos primeiro)
+  agendamentosConfirmados.sort((a, b) => {
+    const dataA = a.dataAgendada ? new Date(a.dataAgendada) : new Date(0);
+    const dataB = b.dataAgendada ? new Date(b.dataAgendada) : new Date(0);
+    return dataA - dataB;
+  });
+
+  agendaListaHtml.innerHTML = '';
+  
+  agendamentosConfirmados.forEach(ag => {
+    // Formata a exibição da data de forma amigável
+    let dataFmt = 'Sem data';
+    if (ag.dataAgendada) {
+      const partes = ag.dataAgendada.split('-');
+      if (partes.length === 3) {
+        dataFmt = `${partes[2]}/${partes[1]}/${partes[0]}`; // Converte AAAA-MM-DD para DD/MM/AAAA
+      } else {
+        dataFmt = ag.dataAgendada;
+      }
+    }
+
+    const horario = ag.horaAgendada || 'Horário não definido';
+    const servicos = (ag.servicos || []).map(s => `• ${s.tipo} (${s.subtipo || ''})`).join('<br>');
+    const valor = ag.valorFinal || 0;
+
+    agendaListaHtml.innerHTML += `
+      <div class="agenda-card-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-card); border-left: 5px solid #22c55e; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div>
+          <div style="font-size: 1.1rem; font-weight: bold; color: var(--text-main); margin-bottom: 4px;">
+            ${ag.nome} <span style="font-size: 0.85rem; font-weight: normal; color: var(--text-mid);">(${ag.numero || 'S/N'})</span>
+          </div>
+          <div style="font-size: 0.9rem; color: var(--text-mid); margin-bottom: 6px;">
+            📞 WhatsApp: <a href="https://wa.me/${ag.whatsapp}" target="_blank" style="color: var(--blue); text-decoration: underline;">${ag.whatsapp}</a>
+          </div>
+          <div style="font-size: 0.9rem; color: var(--text-main); background: rgba(0,0,0,0.03); padding: 6px; border-radius: 4px;">
+            ${servicos}
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-mid); margin-top: 4px;">
+            📍 Endereço: ${ag.endereco || 'Não informado'}
+          </div>
+        </div>
+        <div style="text-align: right; min-width: 140px;">
+          <div style="font-size: 1.2rem; font-weight: 800; color: #22c55e; margin-bottom: 2px;">${dataFmt}</div>
+          <div style="font-size: 1rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">⏰ ${horario}</div>
+          <div style="font-size: 0.95rem; font-weight: bold; color: var(--text-main);">R$ ${valor.toFixed(2).replace('.', ',')}</div>
+        </div>
+      </div>
+    `;
+  });
+};
+
+// Vincula para garantir que se a lista recarregar do Firebase enquanto a página agenda estiver aberta, ela atualize sozinha
+const originalIniciarEscuta = iniciarEscutaTempoReal;
+iniciarEscutaTempoReal = function() {
+  if (typeof originalIniciarEscuta === 'function') {
+    originalIniciarEscuta();
+  }
+  // Cria um gancho adicional para atualizar a agenda em tempo real sempre que os dados mudarem
+  setTimeout(() => {
+    if (window._db && window._rtdb) {
+      const { ref, onValue } = window._rtdb;
+      onValue(ref(window._db, 'orcamentos'), () => {
+        if (paginaAtual === 'agenda') {
+          renderAdminCalendar();
+        }
+      });
+    }
+  }, 1000);
+};
+
+// Aliasing para garantir compatibilidade caso o admin.html chame pelo nome antigo
+window.carregarAgenda = window.renderAdminCalendar;
