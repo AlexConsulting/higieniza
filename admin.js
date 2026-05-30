@@ -1,6 +1,7 @@
 // =============================================
 // HIGIENIZA AÍ — admin.js
 // =============================================
+console.log('✅ [LOG] admin.js versão COM LOGS carregado —', new Date().toLocaleTimeString());
 
 // THEME
 const html = document.documentElement;
@@ -299,9 +300,12 @@ async function carregarOrcamentos() {
   try {
     const db = window._db;
     const { ref, get } = window._rtdb;
+    console.log('📋 [LOG] carregarOrcamentos() — buscando no banco...');
     const snap = await get(ref(db, 'orcamentos'));
+    console.log('📋 [LOG] Existe dados?', snap.exists());
 
     if (!snap.exists()) {
+      console.log('📋 [LOG] Nó "orcamentos" vazio ou inacessível.');
       tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:40px">Nenhum orçamento encontrado.</td></tr>';
       return;
     }
@@ -309,6 +313,7 @@ async function carregarOrcamentos() {
     // Converter objeto em array com id, ordenar por data desc
     const docs = [];
     snap.forEach(c => docs.push({ id: c.key, ...c.val() }));
+    console.log('📋 [LOG] Orçamentos carregados na lista:', docs.length);
     docs.sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
 
     tbody.innerHTML = '';
@@ -345,8 +350,9 @@ async function carregarOrcamentos() {
     document.getElementById('badgeCount').textContent = novos;
 
   } catch(e) {
+    console.error('🔴 [LOG] ERRO no carregarOrcamentos:', e);
+    console.error('🔴 [LOG] Mensagem:', e.message);
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:40px">Erro ao carregar. Verifique o Firebase.</td></tr>';
-    console.error(e);
   }
 }
 
@@ -462,12 +468,16 @@ window.fecharModalOrc = function() {
 let chartReceita, chartServicos, chartCidades, chartMargens;
 
 async function carregarDashboard() {
+  console.log('🔵 [LOG] carregarDashboard() iniciado');
   try {
     const db = window._db;
     const { ref, get } = window._rtdb;
+    console.log('🔵 [LOG] Buscando nó "orcamentos" no banco...');
     const snap = await get(ref(db, 'orcamentos'));
+    console.log('🔵 [LOG] Resposta recebida. Existe dados?', snap.exists());
     const docs = [];
     if (snap.exists()) snap.forEach(c => docs.push({ id: c.key, ...c.val() }));
+    console.log('🔵 [LOG] Total de orçamentos lidos:', docs.length, docs);
     docs.sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
 
     const agora = new Date();
@@ -536,9 +546,11 @@ async function carregarDashboard() {
 
     // Gráficos
     renderGraficos(docs, servicosCount, cidadesCount);
+    console.log('🔵 [LOG] carregarDashboard() concluído COM SUCESSO');
 
   } catch(e) {
-    console.error(e);
+    console.error('🔴 [LOG] ERRO no carregarDashboard — caindo para modo DEMO:', e);
+    console.error('🔴 [LOG] Mensagem do erro:', e.message);
     // Demo data para visualização
     renderGraficosDemoMode();
   }
@@ -1017,6 +1029,9 @@ let painelIniciado = false;
 function iniciarPainel() {
   if (painelIniciado) return;
   painelIniciado = true;
+  console.log('🟢 [LOG] iniciarPainel() chamado — usuário autenticado');
+  console.log('🟢 [LOG] window._db existe?', !!window._db);
+  console.log('🟢 [LOG] window._rtdb existe?', !!window._rtdb);
   carregarConfiguracoes();
   carregarDashboard();
   setTimeout(() => {
@@ -1049,11 +1064,17 @@ function tocarSino() {
 }
 
 function iniciarEscutaTempoReal() {
-  if (!window._db || !window._rtdb) return;
+  console.log('👂 [LOG] iniciarEscutaTempoReal() chamado');
+  if (!window._db || !window._rtdb) {
+    console.error('🔴 [LOG] _db ou _rtdb não disponível! Escuta não iniciada.');
+    return;
+  }
   const { ref, onValue } = window._rtdb;
+  console.log('👂 [LOG] Registrando escuta no nó "orcamentos"...');
   onValue(ref(window._db, 'orcamentos'), (snap) => {
     const docs = [];
     if (snap.exists()) snap.forEach(c => docs.push({ id: c.key, ...c.val() }));
+    console.log('👂 [LOG] Escuta disparou! Orçamentos no banco agora:', docs.length);
     const novos = docs.filter(d => d.status === 'novo').length;
 
     // Atualiza o sininho sempre
@@ -1065,12 +1086,14 @@ function iniciarEscutaTempoReal() {
 
     // Na primeira carga, apenas memoriza (não alerta retroativo)
     if (qtdOrcamentosConhecida === null) {
+      console.log('👂 [LOG] Primeira carga da escuta. Memorizando', docs.length, 'orçamentos.');
       qtdOrcamentosConhecida = docs.length;
       return;
     }
 
     // Chegou pedido novo desde a última vez?
     if (docs.length > qtdOrcamentosConhecida) {
+      console.log('🔔 [LOG] NOVO PEDIDO detectado! Disparando alertas.');
       const maisRecente = docs.sort((a,b) => (b.criadoEm||0)-(a.criadoEm||0))[0];
       dispararAlertaNovoPedido(maisRecente);
       // Atualiza o dashboard e a lista, se aberta
@@ -1078,6 +1101,9 @@ function iniciarEscutaTempoReal() {
       if (paginaAtual === 'orcamentos') carregarOrcamentos();
     }
     qtdOrcamentosConhecida = docs.length;
+  }, (err) => {
+    console.error('🔴 [LOG] ERRO na escuta em tempo real:', err);
+    console.error('🔴 [LOG] Mensagem:', err.message, '— Provável bloqueio nas REGRAS do banco.');
   });
 }
 
@@ -1142,11 +1168,19 @@ function enviarPush(titulo, corpo) {
 
 // Aguarda o Firebase Auth confirmar o login antes de montar o painel.
 // Verifica periodicamente se a função de auth já está disponível.
+console.log('⏳ [LOG] Aguardando Firebase Auth ficar disponível...');
+let authTentativas = 0;
 const authWaiter = setInterval(() => {
+  authTentativas++;
   if (window._authFns && window._auth) {
     clearInterval(authWaiter);
+    console.log('⏳ [LOG] Firebase Auth disponível após', authTentativas, 'tentativas. Registrando listener...');
     window._authFns.onAuthStateChanged(window._auth, (user) => {
+      console.log('🔑 [LOG] onAuthStateChanged disparou. Usuário logado?', !!user, user ? user.email : '(nenhum)');
       if (user) iniciarPainel();
     });
+  } else if (authTentativas > 40) {
+    clearInterval(authWaiter);
+    console.error('🔴 [LOG] Firebase Auth NUNCA ficou disponível após 6s. Verifique os imports no admin.html.');
   }
 }, 150);
