@@ -398,7 +398,7 @@ window.aprovarEEnviar = async function() {
 
     const d = orcamentoAtual;
     const servicos = (d.servicos || []).map(s => `• ${s.tipo} (${s.subtipo}) x${s.quantidade}`).join('\n');
-    const linkAgendar = `${window.location.origin}/agendar.html?id=${orcamentoIdAtual}`;
+    const linkAgendar = `${window.location.origin}/higieniza/agendar.html?id=${orcamentoIdAtual}`;
 
     const msg = encodeURIComponent(
       `Olá, *${d.nome}*! 😊\n\n` +
