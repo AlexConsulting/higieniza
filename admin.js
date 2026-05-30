@@ -1022,6 +1022,122 @@ function iniciarPainel() {
   setTimeout(() => {
     document.querySelectorAll('.page').forEach(p => { if (p.id !== 'page-dashboard') p.style.display = 'none'; });
   }, 100);
+  iniciarEscutaTempoReal();
+  prepararNotificacoesPush();
+}
+
+// =============================================
+// ALERTAS EM TEMPO REAL (som + visual + push)
+// =============================================
+let qtdOrcamentosConhecida = null;  // controla o que já vimos
+let audioLiberado = false;
+
+// Libera o áudio após a primeira interação do usuário (exigência dos navegadores)
+['click','keydown','touchstart'].forEach(ev => {
+  document.addEventListener(ev, () => { audioLiberado = true; }, { once: true });
+});
+
+function tocarSino() {
+  // Toca o som do sininho por até ~7 segundos
+  try {
+    const audio = new Audio('sino.mp3');
+    audio.loop = true;
+    audio.play().catch(() => {});
+    // Para após 7 segundos
+    setTimeout(() => { audio.pause(); audio.currentTime = 0; }, 7000);
+  } catch(e) {}
+}
+
+function iniciarEscutaTempoReal() {
+  if (!window._db || !window._rtdb) return;
+  const { ref, onValue } = window._rtdb;
+  onValue(ref(window._db, 'orcamentos'), (snap) => {
+    const docs = [];
+    if (snap.exists()) snap.forEach(c => docs.push({ id: c.key, ...c.val() }));
+    const novos = docs.filter(d => d.status === 'novo').length;
+
+    // Atualiza o sininho sempre
+    const badge = document.getElementById('badgeCount');
+    if (badge) {
+      badge.textContent = novos;
+      badge.style.display = novos > 0 ? 'flex' : 'none';
+    }
+
+    // Na primeira carga, apenas memoriza (não alerta retroativo)
+    if (qtdOrcamentosConhecida === null) {
+      qtdOrcamentosConhecida = docs.length;
+      return;
+    }
+
+    // Chegou pedido novo desde a última vez?
+    if (docs.length > qtdOrcamentosConhecida) {
+      const maisRecente = docs.sort((a,b) => (b.criadoEm||0)-(a.criadoEm||0))[0];
+      dispararAlertaNovoPedido(maisRecente);
+      // Atualiza o dashboard e a lista, se aberta
+      carregarDashboard();
+      if (paginaAtual === 'orcamentos') carregarOrcamentos();
+    }
+    qtdOrcamentosConhecida = docs.length;
+  });
+}
+
+function dispararAlertaNovoPedido(pedido) {
+  // 1. Som do sininho
+  tocarSino();
+
+  // 2. Aviso visual (toast) clicável
+  const nome = pedido?.nome || 'Cliente';
+  const num = pedido?.numero || '';
+  toast(`🔔 Novo orçamento de ${nome}! ${num}`, 'info');
+
+  // 3. Notificação push do navegador
+  enviarPush('Novo orçamento recebido!', `${nome} ${num} — toque para ver.`);
+
+  // 4. Pisca o título da aba (chama atenção se estiver em outra aba)
+  piscarTitulo();
+}
+
+// Pisca o título da aba do navegador
+let tituloOriginal = document.title;
+let piscaInterval = null;
+function piscarTitulo() {
+  if (piscaInterval) return;
+  let visivel = true;
+  piscaInterval = setInterval(() => {
+    document.title = visivel ? '🔔 NOVO PEDIDO!' : tituloOriginal;
+    visivel = !visivel;
+  }, 1000);
+  // Para de piscar quando o usuário volta para a aba
+  window.addEventListener('focus', pararPisca, { once: true });
+  setTimeout(pararPisca, 20000);
+}
+function pararPisca() {
+  if (piscaInterval) { clearInterval(piscaInterval); piscaInterval = null; document.title = tituloOriginal; }
+}
+
+// =============================================
+// NOTIFICAÇÃO PUSH DO NAVEGADOR
+// =============================================
+function prepararNotificacoesPush() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    // Pede permissão de forma amigável após 3 segundos
+    setTimeout(() => {
+      Notification.requestPermission();
+    }, 3000);
+  }
+}
+
+function enviarPush(titulo, corpo) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    const notif = new Notification(titulo, {
+      body: corpo,
+      icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Ccircle cx="50" cy="50" r="50" fill="%230D1B6E"/%3E%3Ctext y="68" x="30" font-size="55" fill="white" font-family="sans-serif" font-weight="bold"%3Eh%3C/text%3E%3C/svg%3E',
+      tag: 'novo-orcamento'
+    });
+    notif.onclick = () => { window.focus(); navegarPara('orcamentos'); notif.close(); };
+  } catch(e) {}
 }
 
 // Aguarda o Firebase Auth confirmar o login antes de montar o painel.
