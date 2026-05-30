@@ -139,6 +139,7 @@
           <div style="margin-bottom:8px">
             <div class="meta-bar"><div class="meta-fill" id="metaFill" style="width:0%"></div></div>
             <div style="font-size:0.72rem;color:var(--text-mid);margin-top:4px" id="metaLabel">0% da meta</div>
+            <div id="kpiMetaProgress" style="display: none;">0%</div>
           </div>
           <div class="dash-card-accent"></div>
         </div>
@@ -151,68 +152,49 @@
         </div>
       </div>
 
-      <div style="background:linear-gradient(135deg,var(--blue),var(--blue-mid));border-radius:16px;padding:20px 28px;margin-bottom:24px;color:white;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
-        <div>
-          <div style="font-size:0.75rem;opacity:0.7;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Receita Projetada (mês)</div>
-          <div style="font-family:var(--font-display);font-size:2rem;font-weight:800" id="projecaoMes">R$ 0</div>
-          <div style="font-size:0.8rem;opacity:0.7;margin-top:4px" id="projecaoInfo">Baseado nos agendamentos confirmados</div>
+      <div class="charts-layout">
+        <div class="chart-card" style="flex:2">
+          <div class="chart-card-header">
+            <h3>Visão Geral de Ganhos</h3>
+          </div>
+          <canvas id="chartGanhos" height="140"></canvas>
         </div>
-        <div style="display:flex;gap:24px">
-          <div style="text-align:center">
-            <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:700" id="agConfirmados">0</div>
-            <div style="font-size:0.72rem;opacity:0.7">Confirmados</div>
+        <div class="chart-card" style="flex:1">
+          <div class="chart-card-header">
+            <h3>Distribuição de Serviços</h3>
           </div>
-          <div style="text-align:center">
-            <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:700" id="agPendentes">0</div>
-            <div style="font-size:0.72rem;opacity:0.7">Pendentes</div>
-          </div>
-          <div style="text-align:center">
-            <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:700;color:var(--orange)" id="custoKm">R$ 0</div>
-            <div style="font-size:0.72rem;opacity:0.7">Custo Desl.</div>
-          </div>
+          <canvas id="chartServicos" height="140"></canvas>
         </div>
       </div>
 
-      <div class="charts-grid">
-        <div class="chart-card">
-          <div class="chart-card-header">
-            <h3>Receita por período</h3>
-            <div class="chart-period-tabs">
-              <button class="period-tab active" data-period="semana">7 dias</button>
-              <button class="period-tab" data-period="mes">30 dias</button>
-              <button class="period-tab" data-period="trimestre">3 meses</button>
-            </div>
+      <div class="dashboard-bottom">
+        <div class="table-card" style="flex:2">
+          <div class="table-header">
+            <h3>Próximos Agendamentos</h3>
+            <button class="btn-sm primary" onclick="navegarPara('agenda')">Ver Agenda Completa ➔</button>
           </div>
-          <canvas id="chartReceita" height="120"></canvas>
-        </div>
-        <div class="chart-card">
-          <div class="chart-card-header">
-            <h3>Serviços mais pedidos</h3>
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data/Hora</th>
+                  <th>Cliente</th>
+                  <th>Serviços</th>
+                  <th>Valor</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaAvisosDashboard">
+                <tr><td colspan="5" style="text-align:center;color:var(--text-mid);padding:24px">Carregando próximos serviços...</td></tr>
+              </tbody>
+            </table>
           </div>
-          <canvas id="chartServicos" height="200"></canvas>
         </div>
-      </div>
-
-      <div style="margin-bottom:24px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <h3 style="font-family:var(--font-display);font-size:1rem;font-weight:700">Agenda da Semana</h3>
-          <a href="#" data-page="agenda" class="nav-page-link" style="font-size:0.8rem;color:var(--blue);font-weight:600">Ver completa →</a>
-        </div>
-        <div class="week-grid" id="weekGrid"></div>
-      </div>
-
-      <div class="charts-grid" style="grid-template-columns:1fr 1fr">
-        <div class="chart-card">
-          <div class="chart-card-header">
-            <h3>Agendamentos por Cidade</h3>
+        <div class="table-card" style="flex:1">
+          <div class="table-header">
+            <h3>Agenda da Semana</h3>
           </div>
-          <canvas id="chartCidades" height="160"></canvas>
-        </div>
-        <div class="chart-card">
-          <div class="chart-card-header">
-            <h3>Custo x Receita por Serviço</h3>
-          </div>
-          <canvas id="chartMargens" height="160"></canvas>
+          <div class="week-grid" id="weekGrid"></div>
         </div>
       </div>
     </div>
@@ -220,16 +202,17 @@
     <div id="page-orcamentos" class="page" style="display:none">
       <div class="table-card">
         <div class="table-header">
-          <h3>Orçamentos</h3>
-          <div class="table-actions">
-            <select class="btn-sm secondary" id="filterStatus" style="cursor:pointer">
-              <option value="">Todos</option>
-              <option value="novo">Novos</option>
-              <option value="enviado">Enviados</option>
-              <option value="confirmado">Confirmados</option>
-              <option value="concluido">Concluídos</option>
+          <h3>Filtros e Busca</h3>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <select id="filterStatus" onchange="carregarOrcamentos()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--bg);color:var(--text);outline:none">
+              <option value="">Todos os Status</option>
+              <option value="novo">🆕 Novo</option>
+              <option value="enviado">✉️ Enviado</option>
+              <option value="confirmado">🟢 Confirmado</option>
+              <option value="concluido">⚫ Concluído</option>
+              <option value="cancelado">❌ Cancelado</option>
             </select>
-            <button class="btn-sm secondary" onclick="exportarRelatorio()">📄 Exportar</button>
+            <input type="text" id="searchOrcamento" placeholder="Buscar por cliente, número ou cidade..." oninput="carregarOrcamentos()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--bg);color:var(--text);outline:none;width:240px" />
           </div>
         </div>
         <div style="overflow-x:auto">
@@ -239,15 +222,15 @@
                 <th>Nº</th>
                 <th>Data</th>
                 <th>Cliente</th>
-                <th>Serviços</th>
                 <th>Cidade</th>
-                <th>Valor</th>
+                <th>Serviços</th>
+                <th>Total</th>
                 <th>Status</th>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody id="tabelaOrcamentos">
-              <tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:40px">Carregando...</td></tr>
+              <tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:40px">Carregando orçamentos...</td></tr>
             </tbody>
           </table>
         </div>
@@ -255,19 +238,13 @@
     </div>
 
     <div id="page-agenda" class="page" style="display:none">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
-        <div class="chart-card">
-          <div class="chart-card-header">
-            <h3>Calendário de Agendamentos</h3>
+      <div class="agenda-layout" style="display:flex;gap:24px;flex-wrap:wrap">
+        <div class="table-card" style="flex:1;min-width:320px">
+          <div class="table-header">
+            <h3>Lista de Serviços Agendados</h3>
           </div>
-          <div id="adminCalendar"></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-card-header">
-            <h3 id="agendaDayTitle">Selecione uma data</h3>
-          </div>
-          <div id="agendaDayList" style="display:flex;flex-direction:column;gap:10px">
-            <p style="color:var(--text-mid);font-size:0.875rem">Clique em uma data no calendário para ver os agendamentos.</p>
+          <div id="listaAgenda" style="display:flex;flex-direction:column;gap:12px;padding:4px">
+            <div style="text-align:center;color:var(--text-mid);padding:40px">Carregando compromissos...</div>
           </div>
         </div>
       </div>
@@ -276,13 +253,13 @@
     <div id="page-financeiro" class="page" style="display:none">
       <div class="dashboard-grid" style="margin-bottom:24px">
         <div class="dash-card">
-          <div class="dash-card-label">Receita Total</div>
-          <div class="dash-card-value" id="finTotal">R$ 0</div>
+          <div class="dash-card-label">Faturamento Bruto</div>
+          <div class="dash-card-value" id="finBruto">R$ 0</div>
           <div class="dash-card-accent"></div>
         </div>
         <div class="dash-card">
           <div class="dash-card-label">Custo Deslocamento</div>
-          <div class="dash-card-value" id="finCusto">R$ 0</div>
+          <div class="dash-card-value" id="finDeslocamento" style="color:var(--red)">R$ 0</div>
           <div class="dash-card-accent"></div>
         </div>
         <div class="dash-card">
@@ -323,15 +300,13 @@
               <tr>
                 <th>Cliente</th>
                 <th>WhatsApp</th>
-                <th>Cidade</th>
-                <th>Serviços</th>
-                <th>Total Gasto</th>
-                <th>Último Serviço</th>
-                <th>Ações</th>
+                <th>Último Endereço</th>
+                <th>Total Pedidos</th>
+                <th>Total Investido</th>
               </tr>
             </thead>
             <tbody id="tabelaClientes">
-              <tr><td colspan="7" style="text-align:center;color:var(--text-mid);padding:40px">Carregando...</td></tr>
+              <tr><td colspan="5" style="text-align:center;color:var(--text-mid);padding:40px">Carregando clientes...</td></tr>
             </tbody>
           </table>
         </div>
@@ -339,71 +314,50 @@
     </div>
 
     <div id="page-cupons" class="page" style="display:none">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
-        <div class="settings-card">
-          <h3>Criar Novo Cupom</h3>
-          <div class="settings-field">
-            <label>Código do Cupom</label>
-            <input type="text" id="novoCupomCodigo" placeholder="Ex: VERAO10" style="text-transform:uppercase" />
-          </div>
-          <div class="settings-field">
-            <label>Desconto (%)</label>
-            <div style="display:flex;gap:8px">
-              <button class="btn-sm secondary" onclick="setCupomDesconto(5)" style="flex:1">5%</button>
-              <button class="btn-sm secondary" onclick="setCupomDesconto(7)" style="flex:1">7%</button>
-              <button class="btn-sm secondary" onclick="setCupomDesconto(10)" style="flex:1">10%</button>
-            </div>
-            <input type="number" id="novoCupomDesconto" placeholder="Ou digite manualmente" min="1" max="50" style="margin-top:8px" />
-          </div>
-          <div class="settings-field">
-            <label>Validade (opcional)</label>
-            <input type="date" id="novoCupomValidade" />
-          </div>
-          <div class="settings-field">
-            <label>Limite de usos (0 = ilimitado)</label>
-            <input type="number" id="novoCupomUsos" value="0" min="0" />
-          </div>
-          <button class="btn-save" onclick="criarCupom()">✓ Criar Cupom</button>
-        </div>
-        <div class="settings-card">
-          <h3>Cupons Ativos</h3>
-          <div class="coupon-list" id="couponList">
-            <p style="color:var(--text-mid);font-size:0.875rem">Nenhum cupom ativo.</p>
+      <div class="cupons-layout" style="display:grid;grid-template-columns:1fr 2fr;gap:24px">
+        <div class="table-card" style="height:fit-content">
+          <div class="table-header"><h3>Novo Cupom</h3></div>
+          <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+            <div class="settings-field"><label>Código Cupom</label><input type="text" id="novoCupomCodigo" placeholder="EX: HIGIENIZA10" style="text-transform:uppercase" /></div>
+            <div class="settings-field"><label>Desconto (R$)</label><input type="number" id="novoCupomDesconto" placeholder="20" /></div>
+            <div style="display:flex;gap:8px"><button class="btn-sm secondary" onclick="setCupomDesconto(10)">R$10</button><button class="btn-sm secondary" onclick="setCupomDesconto(15)">R$15</button><button class="btn-sm secondary" onclick="setCupomDesconto(20)">R$20</button><button class="btn-sm secondary" onclick="setCupomDesconto(30)">R$30</button></div>
+            <div class="settings-field"><label>Validade (Opcional)</label><input type="date" id="novoCupomValidade" /></div>
+            <div class="settings-field"><label>Limite de Usos (0 = ilimitado)</label><input type="number" id="novoCupomUsos" value="0" /></div>
+            <button class="btn-save" onclick="criarCupom()" style="margin-top:8px">Criar Cupom ✓</button>
           </div>
         </div>
-      </div>
-      <div class="settings-card" style="margin-top:20px">
-        <h3>Uso de Cupons no Mês</h3>
-        <canvas id="chartCupons" height="80"></canvas>
+        <div class="table-card">
+          <div class="table-header"><h3>Cupons Ativos</h3></div>
+          <div id="listaCupons" class="cupons-grid" style="padding:16px">
+            <div style="color:var(--text-mid);text-align:center;padding:24px">Carregando cupons...</div>
+          </div>
+        </div>
       </div>
     </div>
 
     <div id="page-configuracoes" class="page" style="display:none">
       <div class="settings-grid">
-
         <div class="settings-card">
-          <h3>💰 Preços Base</h3>
-          <div class="settings-field"><label>Veículo - Hatch</label><input type="number" id="preco_carro_hatch" value="150" /></div>
-          <div class="settings-field"><label>Veículo - Sedan</label><input type="number" id="preco_carro_sedan" value="170" /></div>
-          <div class="settings-field"><label>Veículo - SUV</label><input type="number" id="preco_carro_suv" value="200" /></div>
-          <div class="settings-field"><label>Veículo - Van</label><input type="number" id="preco_carro_van" value="250" /></div>
-          <div class="settings-field"><label>Veículo - Pickup</label><input type="number" id="preco_carro_pickup" value="220" /></div>
-          <button class="btn-save" onclick="salvarPrecos('carro')">Salvar Veículos</button>
+          <h3>🚗 Tabela de Preços: Veículos</h3>
+          <div class="settings-field"><label>Carro Hatch</label><input type="number" id="preco_carro_hatch" value="150" /></div>
+          <div class="settings-field"><label>Carro Sedan</label><input type="number" id="preco_carro_sedan" value="170" /></div>
+          <div class="settings-field"><label>Carro SUV / SW</label><input type="number" id="preco_carro_suv" value="200" /></div>
+          <div class="settings-field"><label>Carro Van / Furgão</label><input type="number" id="preco_carro_van" value="250" /></div>
+          <div class="settings-field"><label>Carro Pickup</label><input type="number" id="preco_carro_pickup" value="220" /></div>
+          <button class="btn-save" onclick="salvarPrecos('carro')">Salvar</button>
         </div>
-
         <div class="settings-card">
-          <h3>🛋️ Sofás e Colchões</h3>
-          <div class="settings-field"><label>Sofá 2 lugares</label><input type="number" id="preco_sofa_2lugares" value="120" /></div>
-          <div class="settings-field"><label>Sofá 3 lugares</label><input type="number" id="preco_sofa_3lugares" value="150" /></div>
-          <div class="settings-field"><label>Sofá 4 lugares</label><input type="number" id="preco_sofa_4lugares" value="180" /></div>
-          <div class="settings-field"><label>Sofá 5+ lugares</label><input type="number" id="preco_sofa_5lugares" value="220" /></div>
-          <div class="settings-field"><label>Com chaise</label><input type="number" id="preco_sofa_chaise" value="200" /></div>
+          <h3>🛋️ Tabela de Preços: Sofás</h3>
+          <div class="settings-field"><label>Sofá 2 Lugares</label><input type="number" id="preco_sofa_2lugares" value="120" /></div>
+          <div class="settings-field"><label>Sofá 3 Lugares</label><input type="number" id="preco_sofa_3lugares" value="150" /></div>
+          <div class="settings-field"><label>Sofá 4 Lugares</label><input type="number" id="preco_sofa_4lugares" value="180" /></div>
+          <div class="settings-field"><label>Sofá 5 Lugares</label><input type="number" id="preco_sofa_5lugares" value="220" /></div>
+          <div class="settings-field"><label>Sofá c/ Chaise</label><input type="number" id="preco_sofa_chaise" value="200" /></div>
           <div class="settings-field"><label>Poltrona</label><input type="number" id="preco_sofa_poltrona" value="80" /></div>
-          <button class="btn-save" onclick="salvarPrecos('sofa')">Salvar Sofás</button>
+          <button class="btn-save" onclick="salvarPrecos('sofa')">Salvar</button>
         </div>
-
         <div class="settings-card">
-          <h3>😴 Colchões e Cadeiras</h3>
+          <h3>🛏️ Tabela de Preços: Colchões</h3>
           <div class="settings-field"><label>Colchão Solteiro</label><input type="number" id="preco_colchao_solteiro" value="100" /></div>
           <div class="settings-field"><label>Colchão Casal</label><input type="number" id="preco_colchao_casal" value="130" /></div>
           <div class="settings-field"><label>Colchão Queen</label><input type="number" id="preco_colchao_queen" value="160" /></div>
@@ -413,95 +367,77 @@
           <div class="settings-field"><label>Cadeira Gamer</label><input type="number" id="preco_cadeira_gamer" value="90" /></div>
           <button class="btn-save" onclick="salvarPrecos('colchao')">Salvar</button>
         </div>
-
         <div class="settings-card">
           <h3>⛽ Combustível e Deslocamento</h3>
           <div class="settings-field"><label>Preço Gasolina (R$/L)</label><input type="number" id="preco_gasolina" value="5.89" step="0.01" /></div>
           <div class="settings-field"><label>Preço Etanol (R$/L)</label><input type="number" id="preco_etanol" value="3.99" step="0.01" /></div>
-          <div class="settings-field"><label>Combustível usado</label>
-            <select id="combustivel_tipo" style="background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:0.875rem;color:var(--text);outline:none">
-              <option value="gasolina">Gasolina</option>
-              <option value="etanol">Etanol</option>
-            </select>
-          </div>
-          <div class="settings-field"><label>Consumo do carro (km/L)</label><input type="number" id="carro_kmL" value="9" step="0.5" /></div>
-          <div class="settings-field"><label>Adicional até 10km (%)</label><input type="number" id="adicional_10km" value="5" /></div>
-          <div class="settings-field"><label>Adicional 11–30km (%)</label><input type="number" id="adicional_30km" value="10" /></div>
-          <div class="settings-field"><label>Adicional 31km+ (%)</label><input type="number" id="adicional_31km" value="15" /></div>
-          <button class="btn-save" onclick="salvarCombustivel()">Salvar Combustível</button>
+          <div class="settings-field"><label>Combustível Padrão</label><select id="combustivel_tipo"><option value="gasolina">Gasolina</option><option value="etanol">Etanol</option></select></div>
+          <div class="settings-field"><label>Consumo Médio (Km/L)</label><input type="number" id="carro_kmL" value="9" /></div>
+          <div class="settings-field"><label>Pedágio/Adicional até 10km</label><input type="number" id="adicional_10km" value="5" /></div>
+          <div class="settings-field"><label>Pedágio/Adicional até 30km</label><input type="number" id="adicional_30km" value="10" /></div>
+          <div class="settings-field"><label>Pedágio/Adicional acima 31km</label><input type="number" id="adicional_31km" value="15" /></div>
+          <button class="btn-save" onclick="salvarCombustivel()">Salvar</button>
         </div>
-
         <div class="settings-card">
-          <h3>🏙️ Adicional por Cidade</h3>
-          <p style="font-size:0.8rem;color:var(--text-mid);margin-bottom:14px">Adicional aplicado sobre o valor total do serviço.</p>
-          <div class="settings-field"><label>Santo André (%)</label><input type="number" id="adicional_santoandre" value="5" /></div>
-          <div class="settings-field"><label>São Caetano do Sul (%)</label><input type="number" id="adicional_saocaetano" value="10" /></div>
-          <div class="settings-field"><label>Outra cidade (padrão) (%)</label><input type="number" id="adicional_outras" value="0" /></div>
-          <button class="btn-save" onclick="salvarCidades()">Salvar Cidades</button>
+          <h3>🏙️ Taxas Adicionais por Cidade</h3>
+          <div class="settings-field"><label>Santo André (R$)</label><input type="number" id="adicional_santoandre" value="5" /></div>
+          <div class="settings-field"><label>São Caetano do Sul (R$)</label><input type="number" id="adicional_saocaetano" value="10" /></div>
+          <div class="settings-field"><label>Outras Cidades (R$)</label><input type="number" id="adicional_outras" value="0" /></div>
+          <button class="btn-save" onclick="salvarCidades()">Salvar</button>
         </div>
-
         <div class="settings-card">
-          <h3>🎯 Meta e Configurações Gerais</h3>
-          <div class="settings-field"><label>Meta Mensal (R$)</label><input type="number" id="meta_mensal" value="5000" /></div>
-          <div class="settings-field"><label>WhatsApp Admin</label><input type="text" id="admin_whats" value="5511992067073" /></div>
-          <div class="settings-field"><label>WhatsApp da Empresa</label><input type="text" id="empresa_whats" value="5511992067073" /></div>
-          <div class="settings-field"><label>CEP da Sede</label><input type="text" id="sede_cep" value="09361250" /></div>
-          <div class="settings-field"><label>Horários disponíveis (separados por vírgula)</label>
-            <input type="text" id="horarios_disponiveis" value="08:00,09:00,10:00,11:00,13:00,14:00,15:00,16:00,17:00" />
-          </div>
-          <button class="btn-save" onclick="salvarGeral()">Salvar Configurações</button>
+          <h3>⚙️ Parâmetros Gerais do Painel</h3>
+          <div class="settings-field"><label>Meta Faturamento Mensal (R$)</label><input type="number" id="meta_mensal" value="5000" /></div>
+          <div class="settings-field"><label>WhatsApp Notificações Admin</label><input type="text" id="admin_whats" value="5511992067073" /></div>
+          <div class="settings-field"><label>WhatsApp de Contato Empresa</label><input type="text" id="empresa_whats" value="5511992067073" /></div>
+          <div class="settings-field"><label>CEP Base da Sede (Origem)</label><input type="text" id="sede_cep" value="09361250" /></div>
+          <div class="settings-field"><label>Horários da Agenda (separados por vírgula)</label><input type="text" id="horarios_disponiveis" value="08:00,09:00,10:00,11:00,13:00,14:00,15:00,16:00,17:00" /></div>
+          <button class="btn-save" onclick="salvarGeral()">Salvar</button>
         </div>
-
       </div>
     </div>
 
-  </div></main>
+  </div>
+</main>
 
-</div><div class="admin-modal-overlay" id="modalOrcamento">
-  <div class="admin-modal">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
-      <h2 id="modalOrcNumero">Orçamento</h2>
-      <button onclick="fecharModalOrc()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-mid)">×</button>
+</div>
+
+<div class="modal" id="modalOrcamento">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="oTitulo">Orçamento: ORC-XXXX</h3>
+      <button class="modal-close" onclick="fecharModalOrcamento()">×</button>
     </div>
-
-    <div class="modal-section">
-      <h4>Dados do Cliente</h4>
-      <div class="info-row"><span>Nome</span><span id="oNome">—</span></div>
-      <div class="info-row"><span>WhatsApp</span><span id="oWhats">—</span></div>
-      <div class="info-row"><span>Endereço</span><span id="oEndereco">—</span></div>
-      <div class="info-row"><span>CEP</span><span id="oCep">—</span></div>
-      <div class="info-row"><span>Distância estimada</span><span id="oDistancia">—</span></div>
-      <div class="info-row"><span>Cidade detectada</span><span id="oCidade">—</span></div>
-    </div>
-
-    <div class="modal-section">
-      <h4>Serviços Solicitados</h4>
-      <div id="oServicos"></div>
-    </div>
-
-    <div class="modal-section">
-      <h4>Composição do Preço (visível apenas para você)</h4>
-      <div id="oPrecos"></div>
-    </div>
-
-    <div class="modal-section">
-      <h4>Ajuste de Preço Final</h4>
-      <div class="price-adjust" style="width:100%">
-        <label>Valor Final (R$)</label>
-        <input type="number" id="valorFinalAjuste" placeholder="0.00" step="0.01" style="flex:1" />
-        <button class="btn-sm primary" onclick="recalcularTotal()">Recalcular</button>
+    <div class="modal-body">
+      <div class="info-group">
+        <h4>👤 Dados do Cliente</h4>
+        <div class="info-row"><span>Nome:</span><span id="oNome">—</span></div>
+        <div class="info-row"><span>WhatsApp:</span><span id="oWhats">—</span></div>
+        <div class="info-row"><span>Endereço:</span><span id="oEnd">—</span></div>
+        <div class="info-row"><span>Data de Entrada:</span><span id="oCriadoEm">—</span></div>
       </div>
-      <div class="price-total" style="margin-top:12px">
-        <span>Total do Orçamento</span>
-        <strong id="oTotal">R$ 0,00</strong>
+      <div class="info-group">
+        <h4>📋 Serviços Solicitados</h4>
+        <div id="oServicosLista" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+      <div class="info-group">
+        <h4>💰 Resumo Financeiro</h4>
+        <div id="oPrecos"></div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);display:flex;align-items:center;justify-content:between;gap:12px">
+          <label style="font-size:0.85rem;font-weight:600;color:var(--text-main)">Ajustar Valor Final (R$):</label>
+          <input type="number" id="valorFinalAjuste" oninput="recalcularTotal()" style="width:100px;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)" />
+        </div>
+        <div class="info-row" style="margin-top:8px;font-size:1.2rem;font-weight:800;color:var(--primary)">
+          <span>Total Geral:</span><span id="oTotal">R$ 0,00</span>
+        </div>
+      </div>
+      <div class="info-group" id="oAgendamentoInfo" style="display:none;background:rgba(34,197,94,0.1);border:1px solid #22c55e;border-radius:8px;padding:12px">
+        <h4 style="color:#22c55e;margin-top:0">📅 Dados do Agendamento</h4>
+        <div class="info-row"><span>Data Marcada:</span><span id="oAgendaData" style="font-weight:bold">—</span></div>
+        <div class="info-row"><span>Horário:</span><span id="oAgendaHora" style="font-weight:bold">—</span></div>
       </div>
     </div>
-
-    <div class="modal-actions">
-      <button class="btn-sm success" onclick="aprovarEEnviar()">✓ Aprovar e Enviar ao Cliente</button>
-      <button class="btn-sm orange" onclick="abrirWhatsCliente()">💬 Falar no WhatsApp</button>
-      <button class="btn-sm secondary" onclick="fecharModalOrc()">Fechar</button>
-    </div>
+    <div class="modal-footer" id="oAcoes"></div>
   </div>
 </div>
 
@@ -509,55 +445,30 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import {
-    getDatabase, ref, push, set, get, update, remove,
-    query, orderByChild, equalTo, onValue
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-  import {
-    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getDatabase, ref, push, get, update, remove, query, orderByChild, equalTo, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBQK22pp_RR1Hfd47rM9jNBiuZRh7DsQpg",
-    authDomain: "higieniza-ai.firebaseapp.com",
-    databaseURL: "https://higieniza-ai-default-rtdb.firebaseio.com",
-    projectId: "higieniza-ai",
-    storageBucket: "higieniza-ai.firebasestorage.app",
-    messagingSenderId: "638607826584",
-    appId: "1:638607826584:web:41dd132f2701abe785baed",
-    measurementId: "G-1S850Z1Y2G"
+    authDomain: "higieniza-ai-3cc0e.firebaseapp.com",
+    databaseURL: "https://higieniza-ai-3cc0e-default-rtdb.firebaseio.com", // CORRIGIDO PARA O REALTIME DATABASE
+    projectId: "higieniza-ai-3cc0e",
+    storageBucket: "higieniza-ai-3cc0e.appspot.com",
+    messagingSenderId: "89851163459",
+    appId: "1:89851163459:web:cff2f219cebfbbca9334d7"
   };
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const auth = getAuth(app);
+
   window._db = db;
+  window._rtdb = { ref, push, get, update, remove, query, orderByChild, equalTo, onValue };
   window._auth = auth;
-  window._rtdb = { ref, push, set, get, update, remove, query, orderByChild, equalTo, onValue };
   window._authFns = { signInWithEmailAndPassword, signOut, onAuthStateChanged };
 
-  console.log("🟢 [LOG] Firebase exposto ao escopo global.");
   window.dispatchEvent(new Event('firebaseProntoAdmin'));
 
-  // Controle de acesso: mostra login ou painel conforme estado de autenticação
-  onAuthStateChanged(auth, (user) => {
-    const loginScreen = document.getElementById('loginScreen');
-    const appBody = document.getElementById('adminApp');
-    if (user) {
-      loginScreen.style.display = 'none';
-      appBody.style.display = 'flex';
-      const emailEl = document.getElementById('loggedEmail');
-      if (emailEl) emailEl.textContent = user.email;
-      
-      // Dispara uma notificação interna para que o app saiba que o usuário está autenticado
-      window.dispatchEvent(new Event('usuarioAutenticadoAdmin'));
-    } else {
-      loginScreen.style.display = 'flex';
-      appBody.style.display = 'none';
-    }
-  });
-
-  // Função de login (chamada pelo formulário)
   window.fazerLogin = async function(e) {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value.trim();
@@ -569,7 +480,6 @@
     btn.innerHTML = '<span class="spinner"></span> Entrando...';
     try {
       await signInWithEmailAndPassword(auth, email, senha);
-      // onAuthStateChanged cuida de mostrar o painel
     } catch (err) {
       let msg = 'E-mail ou senha incorretos.';
       if (err.code === 'auth/invalid-email') msg = 'E-mail inválido.';
@@ -581,7 +491,6 @@
     }
   };
 
-  // Mostrar / ocultar senha
   window.toggleSenha = function() {
     const input = document.getElementById('loginSenha');
     const aberto = document.getElementById('olhoAberto');
@@ -597,7 +506,6 @@
     }
   };
 
-  // Função de logout
   window.fazerLogout = async function() {
     if (confirm('Deseja sair do painel?')) {
       await signOut(auth);
@@ -615,18 +523,12 @@
         carregarAgenda();
       }
     }
-    
-    // 1. Se o Firebase e a função já existirem imediatamente
     if (window._db && typeof carregarAgenda === 'function') {
       tentarCarregar();
     }
-    
-    // 2. Se o Firebase terminar o download depois
     window.addEventListener('firebaseProntoAdmin', tentarCarregar);
-    
-    // 3. Garante recarga quando o usuário logar/reautenticar com sucesso
-    window.addEventListener('usuarioAutenticadoAdmin', tentarCarregar);
   })();
 </script>
+
 </body>
 </html>
