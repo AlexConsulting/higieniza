@@ -476,7 +476,7 @@
     const btn = document.getElementById('loginBtn');
     erroEl.textContent = '';
     btn.disabled = true;
-    btn.innerHTML = '<span class=\"spinner\"></span> Entrando...';
+    btn.innerHTML = '<span class="spinner"></span> Entrando...';
     try {
       await signInWithEmailAndPassword(auth, email, senha);
     } catch (err) {
@@ -515,4 +515,19 @@
 <script src="admin.js"></script>
 
 <script>
-  (
+  // Padrão limpo nativo para o carregamento da agenda
+  window.carregarAgenda = function() {
+    if (typeof window.renderAdminCalendar === 'function') {
+      window.renderAdminCalendar();
+    }
+  };
+
+  window.addEventListener('firebaseProntoAdmin', function() {
+    if (typeof window.carregarAgenda === 'function') {
+      window.carregarAgenda();
+    }
+  });
+</script>
+
+</body>
+</html>
