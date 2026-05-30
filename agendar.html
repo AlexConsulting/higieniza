@@ -47,7 +47,6 @@
         </div>
       </div>
 
-      <!-- STEP 1: DATA -->
       <div id="stepData">
         <h4 style="font-size:0.85rem;font-weight:700;margin-bottom:12px">1. Escolha a data</h4>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -58,13 +57,11 @@
         <div class="calendar-grid" id="calendarGrid"></div>
       </div>
 
-      <!-- STEP 2: HORÁRIO -->
       <div id="stepHorario" style="display:none;margin-top:24px">
         <h4 style="font-size:0.85rem;font-weight:700;margin-bottom:12px">2. Escolha o horário</h4>
         <div class="time-slots" id="timeSlots"></div>
       </div>
 
-      <!-- CONFIRMAR -->
       <div id="stepConfirmar" style="display:none;margin-top:28px">
         <div class="alert-banner success" style="margin-bottom:16px">
           ✓ <span>Você selecionou: <strong id="resumoDataHora"></strong></span>
@@ -83,7 +80,6 @@
   </div>
 </div>
 
-<!-- MODAL CONFIRMAÇÃO -->
 <div class="modal-overlay" id="confirmModal">
   <div class="modal">
     <div class="modal-icon">🎉</div>
@@ -112,6 +108,10 @@
   const app = initializeApp(firebaseConfig);
   window._db = getDatabase(app);
   window._rtdb = { ref, get, push, update, query, orderByChild, equalTo };
+
+  // Dispara evento avisando o escopo global que o Firebase está pronto para as consultas
+  console.log("🟢 [LOG] Firebase Realtime Database carregado e exposto com sucesso.");
+  window.dispatchEvent(new Event('firebasePronto'));
 </script>
 
 <script>
@@ -152,6 +152,7 @@ async function carregarOrcamento() {
       document.getElementById('sumValor').textContent = `R$ ${(orcamentoData.valorFinal || 0).toFixed(2).replace('.',',')}`;
     }
   } catch(e) {
+    console.error("Erro ao carregar orçamento:", e);
     document.getElementById('sumServicos').textContent = 'Erro ao carregar orçamento';
   }
 }
@@ -209,7 +210,9 @@ async function renderHorarios() {
     const q = query(ref(window._db, 'agendamentos'), orderByChild('data'), equalTo(dataStr));
     const snap = await get(q);
     if (snap.exists()) snap.forEach(c => ocupados.push(c.val().hora));
-  } catch(e) {}
+  } catch(e) {
+    console.error("Erro ao verificar slots ocupados:", e);
+  }
 
   HORARIOS.forEach(h => {
     const taken = ocupados.includes(h);
@@ -290,8 +293,17 @@ function showToast(msg, type = 'info') {
   setTimeout(() => el.remove(), 5000);
 }
 
-carregarOrcamento();
-renderCalendar();
+// Inicializador seguro: Executa imediatamente se o Firebase já estiver no escopo global,
+// ou aguarda o disparo do evento modular garantindo sincronismo perfeito em redes oscilantes.
+if (window._db && window._rtdb) {
+  carregarOrcamento();
+  renderCalendar();
+} else {
+  window.addEventListener('firebasePronto', () => {
+    carregarOrcamento();
+    renderCalendar();
+  });
+}
 </script>
 </body>
 </html>
