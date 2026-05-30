@@ -812,47 +812,114 @@ async function renderFinanceiro() {
 // CLIENTES
 // =============================================
 function carregarClientes() {
-  renderTabelaClientes(ORCAMENTOS);
-}
+  console.log('👥 [LOG] Executando carregarClientes() corrigido individualmente...');
+  const container = document.getElementById('page-clientes');
+  if (!container) return;
 
-function renderTabelaClientes(docsEntrada) {
-  const tbody = document.getElementById('tabelaClientes');
-  if (!tbody) return;
-  try {
-    const docs = (docsEntrada || []).slice().sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
+  // 1. Filtra estritamente apenas os registros que foram CONFIRMADOS
+  const orcamentosConfirmados = ORCAMENTOS.filter(d => 
+    d.status === 'confirmado' || d.status === 'confirmed'
+  );
 
-    const clientesMap = {};
-    docs.forEach(data => {
-      const key = data.whatsapp;
-      if (!clientesMap[key]) {
-        clientesMap[key] = { nome: data.nome, whatsapp: data.whatsapp, cidade: data.endereco?.split(' - ')[1]?.split('/')[0] || '—', servicos: 0, total: 0, ultimo: data.criadoEm ? new Date(data.criadoEm) : new Date() };
-      }
-      clientesMap[key].servicos += (data.servicos || []).length;
-      clientesMap[key].total += data.valorFinal || calcularOrcamentoCompleto(data).total;
-    });
+  // Monta a estrutura da tabela idêntica ao padrão visual do seu sistema
+  container.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">👥 Clientes com Agendamentos Confirmados</h3>
+      </div>
+      <div class="table-responsive" style="padding: 10px;">
+        <table class="admin-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-mid);">
+              <th style="padding: 12px;">Cliente</th>
+              <th style="padding: 12px;">WhatsApp</th>
+              <th style="padding: 12px;">Data / Horário</th>
+              <th style="padding: 12px;">Cidade / Bairro</th>
+              <th style="padding: 12px;">Serviço Realizado</th>
+              <th style="padding: 12px; text-align: right;">Valor do Pedido</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-clientes-lista">
+            </tbody>
+        </table>
+      </div>
+    </div>
+  `;
 
-    const clientes = Object.values(clientesMap);
-    if (!clientes.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px">Nenhum cliente ainda.</td></tr>'; return; }
+  const tbody = document.getElementById('tbody-clientes-lista');
 
-    tbody.innerHTML = '';
-    clientes.forEach(c => {
-      tbody.innerHTML += `
-        <tr>
-          <td><strong>${c.nome}</strong></td>
-          <td>${c.whatsapp}</td>
-          <td>${c.cidade}</td>
-          <td>${c.servicos}</td>
-          <td><strong>R$ ${c.total.toFixed(2).replace('.',',')}</strong></td>
-          <td>${c.ultimo.toLocaleDateString('pt-BR')}</td>
-          <td><button class="btn-sm secondary" onclick="window.open('https://wa.me/55${c.whatsapp.replace(/\D/g,'')}','_blank')">💬 WhatsApp</button></td>
-        </tr>`;
-    });
-  } catch(e) {
-    console.error('🔴 [LOG] ERRO ao renderizar clientes:', e);
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px">Erro ao carregar clientes.</td></tr>';
+  if (orcamentosConfirmados.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; color: var(--text-mid); padding: 30px;">
+          Nenhum cliente confirmado localizado no momento.
+        </td>
+      </tr>
+    `;
+    return;
   }
-}
 
+  // 2. Ordena para mostrar os agendamentos mais recentes primeiro
+  orcamentosConfirmados.sort((a, b) => {
+    const dataA = a.dataAgendada ? new Date(a.dataAgendada) : new Date(0);
+    const dataB = b.dataAgendada ? new Date(b.dataAgendada) : new Date(0);
+    return dataB - dataA;
+  });
+
+  // 3. Renderiza cada registro de forma individual e única (Sem somar por cidade!)
+  orcamentosConfirmados.forEach(cli => {
+    // Formatação amigável da data
+    let dataFmt = 'Sem data';
+    if (cli.dataAgendada) {
+      const partes = cli.dataAgendada.split('-');
+      if (partes.length === 3) dataFmt = `${partes[2]}/${partes[1]}/${partes[0]}`;
+      else dataFmt = cli.dataAgendada;
+    }
+    const horario = cli.horaAgendada || 'S/H';
+
+    // Limpa e extrai a localização para exibição amigável
+    let localizacao = 'Não informada';
+    if (cli.endereco) {
+      const partesEnd = cli.endereco.split('-');
+      if (partesEnd.length >= 2) {
+        localizacao = partesEnd[partesEnd.length - 2].trim() + ' - ' + partesEnd[partesEnd.length - 1].trim();
+      } else {
+        localizacao = cli.endereco;
+      }
+    }
+
+    // Lista os serviços deste pedido específico
+    const listaServicos = (cli.servicos || []).map(s => s.tipo).join(', ') || 'Higienização';
+    const valorPedido = cli.valorFinal || 0;
+
+    tbody.innerHTML += `
+      <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-main);">
+        <td style="padding: 12px; font-weight: 600;">
+          ${cli.nome} <br>
+          <span style="font-size: 0.75rem; color: var(--text-mid); font-weight: normal;">ID: ${cli.numero || 'S/N'}</span>
+        </td>
+        <td style="padding: 12px;">
+          <a href="https://wa.me/${cli.whatsapp}" target="_blank" style="color: var(--blue); text-decoration: underline;">
+            ${cli.whatsapp}
+          </a>
+        </td>
+        <td style="padding: 12px; font-weight: 500;">
+          📅 ${dataFmt} <br>
+          <span style="font-size: 0.85rem; color: var(--text-mid);">⏰ ${horario}</span>
+        </td>
+        <td style="padding: 12px; font-size: 0.9rem;">
+          ${localizacao}
+        </td>
+        <td style="padding: 12px; font-size: 0.9rem; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${listaServicos}">
+          ${listaServicos}
+        </td>
+        <td style="padding: 12px; text-align: right; font-weight: bold; color: #22c55e;">
+          R$ ${valorPedido.toFixed(2).replace('.', ',')}
+        </td>
+      </tr>
+    `;
+  });
+}
 // =============================================
 // CUPONS
 // =============================================
