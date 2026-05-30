@@ -1917,3 +1917,18 @@ tr:hover td { background: var(--bg-alt); }
   .admin-sidebar, .admin-topbar, .modal-actions { display: none !important; }
   .admin-main { margin: 0; }
 }
+
+/* Adicione isso ao final do seu style.css para forçar a visibilidade no modo claro */
+[data-theme="light"] {
+  --text: #1a1a2e;        /* Garante que o texto principal seja escuro */
+  --text-mid: #4a4a6a;    /* Garante que textos secundários sejam visíveis */
+  --card-bg: #ffffff;     /* Fundo do card branco */
+  --border: #dde0f5;      /* Borda visível */
+}
+
+/* E force os títulos e textos dentro dos cards a usarem essa cor */
+[data-theme="light"] .card-title, 
+[data-theme="light"] .admin-table th, 
+[data-theme="light"] .admin-table td {
+  color: #1a1a2e !important; 
+}
