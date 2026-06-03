@@ -82,7 +82,7 @@ function getConfig() {
     precos: {
       carro_hatch: 150, carro_sedan: 170, carro_suv: 200, carro_van: 250, carro_pickup: 220,
       sofa_2lugares: 120, sofa_3lugares: 150, sofa_4lugares: 180, sofa_5lugares: 220,
-      sofa_chaise: 200, sofa_poltrona: 80,
+      sofa_chaise: 200, sofa_poltrona: 80, sofa_retratil_pct: 15,
       colchao_solteiro: 100, colchao_casal: 130, colchao_queen: 160, colchao_king: 190,
       cadeira_jantar: 35, cadeira_escritorio: 70, cadeira_gamer: 90
     },
@@ -212,6 +212,11 @@ function calcularPrecoServico(servico, cfg) {
     case 'sofa':
       const mapSofa = { '2lugares': p.sofa_2lugares, '3lugares': p.sofa_3lugares, '4lugares': p.sofa_4lugares, '5lugares': p.sofa_5lugares, chaise: p.sofa_chaise, poltrona: p.sofa_poltrona };
       base = (mapSofa[tipo] || p.sofa_3lugares) * qtd;
+      // Adicional invisível ao cliente: sofá retrátil dá mais trabalho
+      if (servico.retratil === 'sim') {
+        const pctRetratil = (cfg.precos.sofa_retratil_pct || 0) / 100;
+        base = base * (1 + pctRetratil);
+      }
       break;
     case 'colchao':
       const mapColchao = { solteiro: p.colchao_solteiro, colchao_casal: p.colchao_casal, queen: p.colchao_queen, king: p.colchao_king };
@@ -356,9 +361,20 @@ window.abrirOrcamento = async function(id) {
     document.getElementById('oDistancia').textContent = `≈ ${calc.distancia.toFixed(1)} km`;
     document.getElementById('oCidade').textContent = calc.cidade === 'santoandre' ? 'Santo André (+5%)' : calc.cidade === 'saocaetano' ? 'São Caetano do Sul (+10%)' : 'Outras';
 
-    document.getElementById('oServicos').innerHTML = (d.servicos || []).map(s =>
-      `<div class="info-row"><span>${s.tipo} — ${s.subtipo}</span><span>Qtd: ${s.quantidade}</span></div>`
-    ).join('');
+    document.getElementById('oServicos').innerHTML = (d.servicos || []).map(s => {
+      let extra = '';
+      if (s.tipo === 'sofa') {
+        const labelRetratil = { sim: 'Sim', nao: 'Não', naosei: 'Não sabe' };
+        const labelFibra = { sim: 'Sim', nao: 'Não', naosei: 'Não sabe' };
+        const labelTecido = { linho: 'Linho/Algodão', chenille: 'Chenille', couro: 'Couro', suede: 'Suéde/Veludo', naosei: 'Não sabe' };
+        const partes = [];
+        if (s.retratil) partes.push(`Retrátil: ${labelRetratil[s.retratil] || s.retratil}`);
+        if (s.fibra) partes.push(`Fibra original: ${labelFibra[s.fibra] || s.fibra}`);
+        if (s.tecido) partes.push(`Tecido: ${labelTecido[s.tecido] || s.tecido}`);
+        if (partes.length) extra = `<div style="font-size:0.78rem;color:var(--text-mid);padding:2px 0 8px">↳ ${partes.join(' · ')}</div>`;
+      }
+      return `<div class="info-row"><span>${s.tipo} — ${s.subtipo}</span><span>Qtd: ${s.quantidade}</span></div>${extra}`;
+    }).join('');
 
     let precosHTML = '';
     calc.breakdown.forEach(b => {

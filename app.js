@@ -103,6 +103,13 @@ function renderServiceDetails() {
   });
 }
 
+// Mostra/esconde o campo de tecido conforme "fibra original"
+window.toggleTecido = function(select) {
+  const wrap = select.closest('.detail-grid').querySelector('.sofa-tecido-wrap');
+  if (!wrap) return;
+  wrap.style.display = select.value === 'sim' ? 'flex' : 'none';
+};
+
 function getServiceDetailHTML(service) {
   const configs = {
     carro: {
@@ -150,6 +157,32 @@ function getServiceDetailHTML(service) {
               <option value="1">1 peça</option>
               <option value="2">2 peças</option>
               <option value="3">3 peças</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>É retrátil/reclinável?</label>
+            <select name="sofa_retratil">
+              <option value="nao">Não</option>
+              <option value="sim">Sim</option>
+              <option value="naosei">Não sei informar</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>É de fibra original?</label>
+            <select name="sofa_fibra" onchange="toggleTecido(this)">
+              <option value="nao">Não</option>
+              <option value="sim">Sim</option>
+              <option value="naosei">Não sei informar</option>
+            </select>
+          </div>
+          <div class="form-group sofa-tecido-wrap" style="display:none">
+            <label>Tipo de tecido</label>
+            <select name="sofa_tecido">
+              <option value="linho">Linho / Algodão</option>
+              <option value="chenille">Chenille</option>
+              <option value="couro">Couro / Couro sintético</option>
+              <option value="suede">Suéde / Veludo</option>
+              <option value="naosei">Não sei informar</option>
             </select>
           </div>
         </div>`
@@ -268,7 +301,16 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
   selectedServices.forEach(sv => {
     const tipo = document.querySelector(`[name="${sv}_tipo"]`)?.value || '';
     const qtd = document.querySelector(`[name="${sv}_qtd"]`)?.value || '1';
-    servicos.push({ tipo: sv, subtipo: tipo, quantidade: parseInt(qtd) || 1 });
+    const item = { tipo: sv, subtipo: tipo, quantidade: parseInt(qtd) || 1 };
+    // Campos extras específicos do sofá
+    if (sv === 'sofa') {
+      item.retratil = document.querySelector('[name="sofa_retratil"]')?.value || 'nao';
+      item.fibra = document.querySelector('[name="sofa_fibra"]')?.value || 'nao';
+      item.tecido = document.querySelector('[name="sofa_fibra"]')?.value === 'sim'
+        ? (document.querySelector('[name="sofa_tecido"]')?.value || 'naosei')
+        : null;
+    }
+    servicos.push(item);
   });
 
   const pedido = {

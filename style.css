@@ -25,7 +25,7 @@
   --radius: 16px;
   --radius-sm: 10px;
   --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
-  --nav-h: 72px;
+  --nav-h: 96px;
   --font-display: 'Sora', sans-serif;
   --font-body: 'DM Sans', sans-serif;
 }
@@ -145,6 +145,18 @@ input, textarea, select, button { font-family: var(--font-body); }
   gap: 12px;
   font-family: var(--font-display);
 }
+.logo-img {
+  height: 64px;
+  width: auto;
+  display: block;
+  background: var(--blue);
+  padding: 10px 20px;
+  border-radius: 16px;
+}
+[data-theme="dark"] .logo-img {
+  background: transparent;
+  padding: 10px 0;
+}
 .logo-circle {
   width: 42px; height: 42px;
   background: var(--blue);
@@ -172,14 +184,6 @@ input, textarea, select, button { font-family: var(--font-body); }
 .logo-main { font-size: 1rem; font-weight: 800; color: var(--blue); }
 .logo-sub { font-size: 0.65rem; font-weight: 400; color: var(--text-mid); margin-top: 2px; }
 [data-theme="dark"] .logo-main { color: var(--white); }
-/* Ajuste para o Logo no Painel Admin */
-.admin-sidebar .logo-main {
-  color: #ffffff !important;
-}
-
-.admin-sidebar .logo-sub {
-  color: #ffffff !important;
-}
 
 .nav-links {
   display: flex;
