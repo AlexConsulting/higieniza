@@ -129,9 +129,8 @@ function getServiceDetailHTML(service) {
           <div class="form-group">
             <label>Itens a higienizar</label>
             <select name="carro_itens">
-              <option value="completo">Completo (bancos + teto + tapetes)</option>
               <option value="bancos">Somente bancos</option>
-              <option value="tapetes">Somente tapetes</option>
+              
             </select>
           </div>
         </div>`
