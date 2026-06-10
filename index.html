@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Higieniza Aí — Lavagem a Seco Profissional</title>
+  <meta name="description" content="Higienização profissional a seco de estofados, sofás, colchões e veículos. Solicite seu orçamento online." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%230D1B6E'/><text y='.9em' font-size='70' x='15' fill='white'>h</text></svg>" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar">
+  <div class="nav-container">
+    <a href="#" class="nav-logo">
+      <img src="img/logo_frente.png" alt="Higieniza Aí" class="logo-img" />
+    </a>
+    <ul class="nav-links">
+      <li><a href="#servicos">Serviços</a></li>
+      <li><a href="#como-funciona">Como Funciona</a></li>
+      <li><a href="#depoimentos">Depoimentos</a></li>
+      <li><a href="#orcamento" class="btn-nav">Solicitar Orçamento</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="theme-toggle" id="themeToggle" title="Alternar tema">
+        <span class="icon-sun">☀️</span>
+        <span class="icon-moon">🌙</span>
+      </button>
+      <button class="nav-burger" id="navBurger">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <div class="nav-mobile" id="navMobile">
+    <a href="#servicos">Serviços</a>
+    <a href="#como-funciona">Como Funciona</a>
+    <a href="#depoimentos">Depoimentos</a>
+    <a href="#orcamento">Solicitar Orçamento</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="hero-bg">
+    <div class="hero-orb orb1"></div>
+    <div class="hero-orb orb2"></div>
+    <div class="hero-grid"></div>
+  </div>
+  <div class="hero-inner">
+  <div class="hero-content">
+    <div class="hero-badge">✨ Higienização Profissional a Seco</div>
+    <h1 class="hero-title">
+      Seus estofados<br class="br-desktop"/>
+      <span class="gradient-text">limpos e renovados</span><br class="br-desktop"/>
+      sem esforço
+    </h1>
+    <p class="hero-subtitle">
+      Tecnologia a seco que elimina ácaros, fungos e bactérias<br/>
+      com resultado imediato e sem odor.
+    </p>
+    <div class="hero-ctas">
+      <a href="#orcamento" class="btn-primary">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Solicitar Orçamento Grátis
+      </a>
+      <a href="https://wa.me/5511992067073" target="_blank" class="btn-secondary">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Falar com Especialista
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-num">500+</span>
+        <span class="stat-label">Clientes Atendidos</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-num">4.9 / 5.0★</span>
+        <span class="stat-label">Avaliação Média</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-num">100%</span>
+        <span class="stat-label">Satisfação Garantida</span>
+      </div>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="hero-card floating">
+      <div class="card-icon">🛋️</div>
+      <div class="card-info">
+        <strong>Sofá Limpo!</strong>
+        <span>Higienização concluída</span>
+      </div>
+      <div class="card-check">✓</div>
+    </div>
+    <div class="hero-card floating delay1">
+      <div class="card-icon">🚗</div>
+      <div class="card-info">
+        <strong>Veículo Higienizado</strong>
+        <span>Sem ácaros e bactérias</span>
+      </div>
+      <div class="card-check">✓</div>
+    </div>
+    <div class="hero-card floating delay2">
+      <div class="card-icon">😴</div>
+      <div class="card-info">
+        <strong>Colchão Renovado</strong>
+        <span>Sono mais saudável</span>
+      </div>
+      <div class="card-check">✓</div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<!-- SERVIÇOS -->
+<section class="section" id="servicos">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">Nossos Serviços</span>
+      <h2>O que higienizamos</h2>
+      <p>Tecnologia avançada a seco para todos os tipos de estofados</p>
+    </div>
+    <div class="services-grid">
+
+      <div class="service-card" data-service="carro">
+        <div class="service-icon-wrap">
+          <svg class="service-svg" viewBox="0 0 80 80" fill="none">
+            <circle cx="40" cy="40" r="38" fill="var(--blue)" opacity="0.1"/>
+            <path d="M15 42l5-12h40l5 12v8H15v-8z" fill="var(--blue)" opacity="0.2"/>
+            <path d="M20 42l4-10h32l4 10" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round"/>
+            <rect x="13" y="42" width="54" height="10" rx="3" fill="var(--blue)" opacity="0.15" stroke="var(--blue)" stroke-width="2"/>
+            <circle cx="25" cy="54" r="5" fill="var(--blue)" stroke="white" stroke-width="2"/>
+            <circle cx="55" cy="54" r="5" fill="var(--blue)" stroke="white" stroke-width="2"/>
+            <path d="M28 36h6M46 36h6" stroke="var(--blue)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>Estofados de Veículo</h3>
+        <p>Bancos dianteiros e traseiros. Elimina odores, manchas e microorganismos.</p>
+        <ul class="service-items">
+          <li>✓ Bancos dianteiros</li>
+          <li>✓ Banco traseiro</li>
+       
+        </ul>
+        <a href="#orcamento" class="service-cta">Solicitar Orçamento</a>
+      </div>
+
+      <div class="service-card featured" data-service="sofa">
+        <div class="service-badge">Mais Solicitado</div>
+        <div class="service-icon-wrap">
+          <svg class="service-svg" viewBox="0 0 80 80" fill="none">
+            <circle cx="40" cy="40" r="38" fill="var(--orange)" opacity="0.1"/>
+            <rect x="18" y="38" width="44" height="18" rx="4" fill="var(--orange)" opacity="0.2" stroke="var(--orange)" stroke-width="2"/>
+            <rect x="12" y="34" width="12" height="22" rx="3" fill="var(--orange)" opacity="0.3" stroke="var(--orange)" stroke-width="2"/>
+            <rect x="56" y="34" width="12" height="22" rx="3" fill="var(--orange)" opacity="0.3" stroke="var(--orange)" stroke-width="2"/>
+            <rect x="22" y="30" width="36" height="10" rx="3" fill="var(--orange)" opacity="0.4" stroke="var(--orange)" stroke-width="2"/>
+            <line x1="24" y1="56" x2="24" y2="62" stroke="var(--orange)" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="56" y1="56" x2="56" y2="62" stroke="var(--orange)" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>Sofás e Poltronas</h3>
+        <p>Higienização completa de sofás de 2, 3 e mais lugares, poltronas e chaise. Todos os tecidos e couro.</p>
+        <ul class="service-items">
+          <li>✓ Sofá 2, 3 e + lugares</li>
+          <li>✓ Poltronas</li>
+          <li>✓ Chaise longue</li>
+          <li>✓ Couro e tecido</li>
+        </ul>
+        <a href="#orcamento" class="service-cta">Solicitar Orçamento</a>
+      </div>
+
+      <div class="service-card" data-service="colchao">
+        <div class="service-icon-wrap">
+          <svg class="service-svg" viewBox="0 0 80 80" fill="none">
+            <circle cx="40" cy="40" r="38" fill="var(--blue)" opacity="0.1"/>
+            <rect x="14" y="32" width="52" height="22" rx="4" fill="var(--blue)" opacity="0.15" stroke="var(--blue)" stroke-width="2"/>
+            <rect x="14" y="29" width="52" height="6" rx="3" fill="var(--blue)" opacity="0.3" stroke="var(--blue)" stroke-width="2"/>
+            <path d="M20 54v5M60 54v5" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M26 40h8M46 40h8" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+            <circle cx="40" cy="42" r="3" fill="var(--blue)" opacity="0.4"/>
+          </svg>
+        </div>
+        <h3>Colchões</h3>
+        <p>Higienização profunda de colchões de todos os tamanhos. Elimina 99,9% dos ácaros e fungos.</p>
+        <ul class="service-items">
+          <li>✓ Solteiro, casal, queen</li>
+          <li>✓ King e box</li>
+          <li>✓ Travesseiros</li>
+         
+        </ul>
+        <a href="#orcamento" class="service-cta">Solicitar Orçamento</a>
+      </div>
+
+      <div class="service-card" data-service="cadeira">
+        <div class="service-icon-wrap">
+          <svg class="service-svg" viewBox="0 0 80 80" fill="none">
+            <circle cx="40" cy="40" r="38" fill="var(--blue)" opacity="0.1"/>
+            <rect x="25" y="26" width="30" height="20" rx="3" fill="var(--blue)" opacity="0.2" stroke="var(--blue)" stroke-width="2"/>
+            <rect x="28" y="44" width="24" height="8" rx="2" fill="var(--blue)" opacity="0.3" stroke="var(--blue)" stroke-width="2"/>
+            <line x1="30" y1="52" x2="28" y2="62" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="50" y1="52" x2="52" y2="62" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="22" y1="34" x2="28" y2="34" stroke="var(--blue)" stroke-width="2" stroke-linecap="round"/>
+            <line x1="52" y1="34" x2="58" y2="34" stroke="var(--blue)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>Cadeiras</h3>
+        <p>Cadeiras de jantar, escritório, gaming e cadeirões. Renovação completa do estofamento.</p>
+        <ul class="service-items">
+          <li>✓ Cadeiras de jantar</li>
+          <li>✓ Cadeira de escritório</li>
+          <li>✓ Cadeira gamer</li>
+          <li>✓ Pacotes com conjunto</li>
+        </ul>
+        <a href="#orcamento" class="service-cta">Solicitar Orçamento</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- COMO FUNCIONA -->
+<section class="section bg-alt" id="como-funciona">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">Processo</span>
+      <h2>Como funciona</h2>
+      <p>Simples, rápido e sem complicação</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number">01</div>
+        <div class="step-icon">📋</div>
+        <h3>Solicite o Orçamento</h3>
+        <p>Preencha o formulário com seu endereço e selecione os itens a higienizar. Leva menos de 2 minutos.</p>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step-card">
+        <div class="step-number">02</div>
+        <div class="step-icon">💬</div>
+        <h3>Receba no WhatsApp</h3>
+        <p>Em minutos você recebe o orçamento personalizado diretamente no seu WhatsApp com todos os detalhes.</p>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step-card">
+        <div class="step-number">03</div>
+        <div class="step-icon">📅</div>
+        <h3>Agende o Horário</h3>
+        <p>Confirme o orçamento e escolha o melhor dia e horário para a visita do nosso técnico especialista.</p>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step-card">
+        <div class="step-number">04</div>
+        <div class="step-icon">✨</div>
+        <h3>Pronto! Estofado Novo</h3>
+        <p>Nossa equipe vai até você, realiza o serviço no local e você aproveita o resultado imediatamente.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFÍCIOS -->
+<section class="section" id="beneficios">
+  <div class="container">
+    <div class="benefits-layout">
+      <div class="benefits-text">
+        <span class="section-tag">Por que escolher</span>
+        <h2>A higienização a seco que realmente funciona</h2>
+        <div class="benefit-list">
+          <div class="benefit-item">
+            <div class="benefit-icon">🦠</div>
+            <div>
+              <h4>Elimina 99,9% dos microorganismos</h4>
+              <p>Ácaros, fungos, bactérias e vírus são eliminados com nossos produtos certificados.</p>
+            </div>
+          </div>
+          <div class="benefit-item">
+            <div class="benefit-icon">💧</div>
+            <div>
+              <h4>Pré-seco — uso imediato</h4>
+              <p>Diferente da lavagem tradicional, o estofado fica pronto para uso em alguns instantes.</p>
+            </div>
+          </div>
+          <div class="benefit-item">
+            <div class="benefit-icon">🏠</div>
+            <div>
+              <h4>Atendimento em domicílio</h4>
+              <p>Vamos até você. Sem precisar carregar sofá ou colchão a lugar nenhum.</p>
+            </div>
+          </div>
+          <div class="benefit-item">
+            <div class="benefit-icon">🌿</div>
+            <div>
+              <h4>Produtos biodegradáveis</h4>
+              <p>Seguros para crianças, idosos e pets. Certificados e testados dermatologicamente.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="benefits-visual">
+        <div class="visual-card">
+          <div class="vc-header">Resultado comprovado</div>
+          <div class="vc-before-after">
+            <div class="vc-side before">
+              <div class="vc-label">Antes</div>
+              <div class="vc-illustration dirty">
+                <div class="dirt-spot s1"></div>
+                <div class="dirt-spot s2"></div>
+                <div class="dirt-spot s3"></div>
+              </div>
+            </div>
+            <div class="vc-arrow">→</div>
+            <div class="vc-side after">
+              <div class="vc-label">Depois</div>
+              <div class="vc-illustration clean">
+                <div class="sparkle sp1">✦</div>
+                <div class="sparkle sp2">✦</div>
+                <div class="sparkle sp3">✦</div>
+              </div>
+            </div>
+          </div>
+          <div class="vc-stats">
+            <div class="vc-stat"><span>99,9%</span><small>eliminação de ácaros</small></div>
+            <div class="vc-stat"><span>2h</span><small>tempo médio de serviço</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEPOIMENTOS -->
+<section class="section bg-alt" id="depoimentos">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">Depoimentos</span>
+      <h2>O que nossos clientes dizem</h2>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="stars">⭐⭐⭐⭐⭐</div>
+        <p>"Serviço excelente e com resultado incrível. Esse eu Recomendo."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">M</div>
+          <div>
+            <strong>Alex Silva</strong>
+            <span>São Caetano do Sul</span>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card featured-t">
+        <div class="stars">⭐⭐⭐⭐⭐</div>
+        <p>"Trabalho excepcional!! Preço acessível e atendimento super atencioso!! Vai até sua residência e toma cuidado com cada detalhe 👏👏👏🏆 indico demaisss …"</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">R</div>
+          <div>
+            <strong>Hugo Pinheiro.</strong>
+            <span>Mauá</span>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="stars">⭐⭐⭐⭐⭐</div>
+        <p>"Serviço de ótima qualidade, excelente produtos e um resultado impecável.Indico com certeza."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">C</div>
+          <div>
+            <strong>Joalison Alves Lima.</strong>
+            <span>Santo André</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FORMULÁRIO DE ORÇAMENTO -->
+<section class="section" id="orcamento">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">Orçamento Grátis</span>
+      <h2>Solicite seu orçamento</h2>
+      <p>Preencha os dados abaixo e receba o orçamento no seu WhatsApp em minutos</p>
+    </div>
+
+    <div class="form-wrapper">
+      <form class="orcamento-form" id="orcamentoForm">
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="nome">Seu nome completo *</label>
+            <input type="text" id="nome" placeholder="Ex: João Silva" required />
+          </div>
+          <div class="form-group">
+            <label for="whatsapp">WhatsApp *</label>
+            <input type="tel" id="whatsapp" placeholder="(11) 99999-9999" required />
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="cep">CEP *</label>
+            <div class="input-with-btn">
+              <input type="text" id="cep" placeholder="00000-000" maxlength="9" required />
+              <button type="button" class="btn-buscar-cep" id="btnBuscarCep">Buscar</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="endereco">Endereço (preenchido automaticamente)</label>
+            <input type="text" id="endereco" placeholder="Rua, número, bairro..." />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Selecione o(s) item(ns) a higienizar *</label>
+          <div class="services-selector">
+
+            <div class="service-option" data-value="carro">
+              <div class="so-icon">
+                <svg viewBox="0 0 40 40" fill="none">
+                  <path d="M7 21l3-7h20l3 7v4H7v-4z" fill="var(--blue)" opacity="0.2"/>
+                  <path d="M10 21l2-5h16l2 5" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round"/>
+                  <rect x="5" y="21" width="30" height="5" rx="2" fill="var(--blue)" opacity="0.15" stroke="var(--blue)" stroke-width="1.5"/>
+                  <circle cx="12" cy="27" r="2.5" fill="var(--blue)" stroke="white" stroke-width="1"/>
+                  <circle cx="28" cy="27" r="2.5" fill="var(--blue)" stroke="white" stroke-width="1"/>
+                </svg>
+              </div>
+              <span>Veículo</span>
+              <div class="so-check">✓</div>
+            </div>
+
+            <div class="service-option" data-value="sofa">
+              <div class="so-icon">
+                <svg viewBox="0 0 40 40" fill="none">
+                  <rect x="9" y="19" width="22" height="9" rx="2" fill="var(--blue)" opacity="0.2" stroke="var(--blue)" stroke-width="1.5"/>
+                  <rect x="6" y="17" width="6" height="11" rx="1.5" fill="var(--blue)" opacity="0.3" stroke="var(--blue)" stroke-width="1.5"/>
+                  <rect x="28" y="17" width="6" height="11" rx="1.5" fill="var(--blue)" opacity="0.3" stroke="var(--blue)" stroke-width="1.5"/>
+                  <rect x="11" y="15" width="18" height="5" rx="1.5" fill="var(--blue)" opacity="0.4" stroke="var(--blue)" stroke-width="1.5"/>
+                  <line x1="12" y1="28" x2="12" y2="31" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="28" y1="28" x2="28" y2="31" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <span>Sofá/Poltrona</span>
+              <div class="so-check">✓</div>
+            </div>
+
+            <div class="service-option" data-value="colchao">
+              <div class="so-icon">
+                <svg viewBox="0 0 40 40" fill="none">
+                  <rect x="7" y="16" width="26" height="11" rx="2" fill="var(--blue)" opacity="0.15" stroke="var(--blue)" stroke-width="1.5"/>
+                  <rect x="7" y="14" width="26" height="3" rx="1.5" fill="var(--blue)" opacity="0.3" stroke="var(--blue)" stroke-width="1.5"/>
+                  <line x1="10" y1="27" x2="10" y2="30" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="30" y1="27" x2="30" y2="30" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="13" y1="21" x2="17" y2="21" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+                  <line x1="23" y1="21" x2="27" y2="21" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+                </svg>
+              </div>
+              <span>Colchão</span>
+              <div class="so-check">✓</div>
+            </div>
+
+            <div class="service-option" data-value="cadeira">
+              <div class="so-icon">
+                <svg viewBox="0 0 40 40" fill="none">
+                  <rect x="13" y="13" width="14" height="10" rx="1.5" fill="var(--blue)" opacity="0.2" stroke="var(--blue)" stroke-width="1.5"/>
+                  <rect x="14" y="22" width="12" height="4" rx="1" fill="var(--blue)" opacity="0.3" stroke="var(--blue)" stroke-width="1.5"/>
+                  <line x1="15" y1="26" x2="14" y2="31" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="25" y1="26" x2="26" y2="31" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="11" y1="17" x2="14" y2="17" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="26" y1="17" x2="29" y2="17" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <span>Cadeira</span>
+              <div class="so-check">✓</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Detalhes dinâmicos por serviço -->
+        <div id="serviceDetails" class="service-details-container"></div>
+
+        <div class="form-group">
+          <label for="obs">Observações (opcional)</label>
+          <textarea id="obs" rows="3" placeholder="Ex: sofá com manchas de gordura, carro com cheiro de cigarro..."></textarea>
+        </div>
+
+        <div class="form-group cupom-row">
+          <label for="cupom">Tem um cupom de desconto?</label>
+          <div class="input-with-btn">
+            <input type="text" id="cupom" placeholder="Digite o código" />
+            <button type="button" class="btn-buscar-cep" id="btnCupom">Aplicar</button>
+          </div>
+          <div id="cupomMsg" class="cupom-msg"></div>
+        </div>
+
+        <div class="form-submit">
+          <button type="submit" class="btn-submit" id="btnSubmit">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            Solicitar Orçamento Grátis
+          </button>
+          <p class="form-disclaimer">✓ Sem compromisso &nbsp; ✓ Resposta em minutos &nbsp; ✓ 100% gratuito</p>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- MODAL DE SUCESSO -->
+<div class="modal-overlay" id="successModal">
+  <div class="modal">
+    <div class="modal-icon">🎉</div>
+    <h3>Orçamento Enviado!</h3>
+    <p>Recebemos sua solicitação. Em breve nossa equipe entrará em contato pelo WhatsApp <strong id="modalWhats"></strong> com seu orçamento personalizado.</p>
+    <div class="modal-number">Número do Orçamento: <strong id="modalNumero"></strong></div>
+    <button class="btn-primary" onclick="closeModal()">Entendido!</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="img/logo_frente.png" alt="Higieniza Aí" style="height:48px;margin-bottom:1rem" />
+        <p>Higienização profissional a seco para todos os seus estofados. Qualidade e praticidade na palma da mão.</p>
+      </div>
+      <div class="footer-links">
+        <h4>Serviços</h4>
+        <a href="#servicos">Estofados de Veículo</a>
+        <a href="#servicos">Sofás e Poltronas</a>
+        <a href="#servicos">Colchões</a>
+        <a href="#servicos">Cadeiras</a>
+      </div>
+      <div class="footer-links">
+        <h4>Empresa</h4>
+        <a href="#como-funciona">Como Funciona</a>
+        <a href="#depoimentos">Depoimentos</a>
+        <a href="#orcamento">Solicitar Orçamento</a>
+      </div>
+      <div class="footer-contact">
+        <h4>Contato</h4>
+        <a href="https://wa.me/5511992067073" target="_blank">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          WhatsApp
+        </a>
+        <span>Mauá, SP</span>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 Higieniza Aí. Todos os direitos reservados.</p>
+      <a href="admin.html" class="admin-link">Área Administrativa</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Scripts Firebase (Realtime Database) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, push, get, child, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBQK22pp_RR1Hfd47rM9jNBiuZRh7DsQpg",
+    authDomain: "higieniza-ai.firebaseapp.com",
+    databaseURL: "https://higieniza-ai-default-rtdb.firebaseio.com",
+    projectId: "higieniza-ai",
+    storageBucket: "higieniza-ai.firebasestorage.app",
+    messagingSenderId: "638607826584",
+    appId: "1:638607826584:web:41dd132f2701abe785baed",
+    measurementId: "G-1S850Z1Y2G"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  window._db = db;
+  window._rtdb = { ref, push, get, child, query, orderByChild, equalTo };
+</script>
+
+<script src="app.js"></script>
+</body>
+</html>
