@@ -2,6 +2,35 @@
 // HIGIENIZA AÍ — app.js
 // =============================================
 
+// =============================================
+// TABELA DE PREÇOS-BASE (espelha as Configurações do painel)
+// Se mudar um preço no painel admin, atualize aqui também.
+// =============================================
+const PRECOS_BASE = {
+  carro:   { hatch: 150, sedan: 170, suv: 200, van: 250, pickup: 220, _default: 170 },
+  sofa:    { '2lugares': 120, '3lugares': 150, '4lugares': 180, '5lugares': 220, chaise: 200, poltrona: 80, _default: 150 },
+  colchao: { solteiro: 100, casal: 130, queen: 160, king: 190, _default: 130 },
+  cadeira: { jantar: 35, escritorio: 70, gamer: 90, cadeirao: 90, _default: 35 }
+};
+const SOFA_RETRATIL_PCT = 15;      // adicional invisível ao cliente, mas entra no valor
+const MAX_PARCELAS = 5;            // crédito em até 5x
+
+// Calcula o valor estimado de uma lista de serviços
+function calcularEstimativa(servicos) {
+  let total = 0;
+  servicos.forEach(s => {
+    const tabela = PRECOS_BASE[s.tipo] || {};
+    let preco = tabela[s.subtipo] != null ? tabela[s.subtipo] : (tabela._default || 0);
+    preco = preco * (s.quantidade || 1);
+    // Adicional de sofá retrátil
+    if (s.tipo === 'sofa' && s.retratil === 'sim') {
+      preco = preco * (1 + SOFA_RETRATIL_PCT / 100);
+    }
+    total += preco;
+  });
+  return total;
+}
+
 // THEME TOGGLE
 const themeToggle = document.getElementById('themeToggle');
 const html = document.documentElement;
@@ -103,13 +132,6 @@ function renderServiceDetails() {
   });
 }
 
-// Mostra/esconde o campo de tecido conforme "fibra original"
-window.toggleTecido = function(select) {
-  const wrap = select.closest('.detail-grid').querySelector('.sofa-tecido-wrap');
-  if (!wrap) return;
-  wrap.style.display = select.value === 'sim' ? 'flex' : 'none';
-};
-
 function getServiceDetailHTML(service) {
   const configs = {
     carro: {
@@ -152,14 +174,6 @@ function getServiceDetailHTML(service) {
             </select>
           </div>
           <div class="form-group">
-            <label>Quantidade</label>
-            <select name="sofa_qtd">
-              <option value="1">1 peça</option>
-              <option value="2">2 peças</option>
-              <option value="3">3 peças</option>
-            </select>
-          </div>
-          <div class="form-group">
             <label>É retrátil/reclinável?</label>
             <select name="sofa_retratil">
               <option value="nao">Não</option>
@@ -168,20 +182,12 @@ function getServiceDetailHTML(service) {
             </select>
           </div>
           <div class="form-group">
-            <label>É de fibra original?</label>
-            <select name="sofa_fibra" onchange="toggleTecido(this)">
-              <option value="nao">Não</option>
-              <option value="sim">Sim</option>
-              <option value="naosei">Não sei informar</option>
-            </select>
-          </div>
-          <div class="form-group sofa-tecido-wrap" style="display:none">
-            <label>Tipo de tecido</label>
+            <label>Tecido ou couro?</label>
             <select name="sofa_tecido">
-              <option value="linho">Linho / Algodão</option>
-              <option value="chenille">Chenille</option>
+              <option value="linho">Tecido — Linho / Algodão</option>
+              <option value="chenille">Tecido — Chenille</option>
+              <option value="suede">Tecido — Suéde / Veludo</option>
               <option value="couro">Couro / Couro sintético</option>
-              <option value="suede">Suéde / Veludo</option>
               <option value="naosei">Não sei informar</option>
             </select>
           </div>
@@ -305,10 +311,7 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
     // Campos extras específicos do sofá
     if (sv === 'sofa') {
       item.retratil = document.querySelector('[name="sofa_retratil"]')?.value || 'nao';
-      item.fibra = document.querySelector('[name="sofa_fibra"]')?.value || 'nao';
-      item.tecido = document.querySelector('[name="sofa_fibra"]')?.value === 'sim'
-        ? (document.querySelector('[name="sofa_tecido"]')?.value || 'naosei')
-        : null;
+      item.tecido = document.querySelector('[name="sofa_tecido"]')?.value || 'naosei';
     }
     servicos.push(item);
   });
@@ -365,6 +368,15 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
     // Mostrar modal
     document.getElementById('modalWhats').textContent = pedido.whatsapp;
     document.getElementById('modalNumero').textContent = pedido.numero;
+
+    // Calcula e exibe o valor estimado + parcelamento
+    const estimativa = calcularEstimativa(servicos);
+    const fmt = (v) => 'R$ ' + v.toFixed(2).replace('.', ',');
+    document.getElementById('orcValorEstimado').textContent = fmt(estimativa);
+    const parcela = estimativa / MAX_PARCELAS;
+    document.getElementById('orcParcela').textContent =
+      `à vista no Pix/débito ou em até ${MAX_PARCELAS}x de ${fmt(parcela)} no crédito`;
+
     document.getElementById('successModal').classList.add('open');
 
     // Rastreia conversão no Meta Pixel (orçamento enviado)

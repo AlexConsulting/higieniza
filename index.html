@@ -555,11 +555,41 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <!-- MODAL DE SUCESSO -->
 <div class="modal-overlay" id="successModal">
-  <div class="modal">
+  <div class="modal modal-orcamento">
     <div class="modal-icon">🎉</div>
     <h3>Orçamento Enviado!</h3>
-    <p>Recebemos sua solicitação. Em breve nossa equipe entrará em contato pelo WhatsApp <strong id="modalWhats"></strong> com seu orçamento personalizado.</p>
+    <p class="modal-sub">Recebemos sua solicitação. Veja abaixo o valor estimado do seu serviço:</p>
+
+    <!-- Valor estimado -->
+    <div class="orc-price-box">
+      <span class="orc-price-label">Valor estimado</span>
+      <span class="orc-price-value" id="orcValorEstimado">R$ 0,00</span>
+      <span class="orc-price-parcela" id="orcParcela">ou em até 5x no cartão</span>
+      <span class="orc-price-disclaimer">* Valor sujeito a confirmação após análise (distância e detalhes do serviço).</span>
+    </div>
+
+    <!-- Destaque: pague depois -->
+    <div class="orc-pague-depois">
+      <span class="orc-pd-icon">🔒</span>
+      <div>
+        <strong>Você só paga após o serviço realizado!</strong>
+        <span>Sem nenhum adiantamento. Pague apenas quando o trabalho estiver concluído e aprovado.</span>
+      </div>
+    </div>
+
+    <!-- Formas de pagamento -->
+    <div class="orc-pagamentos">
+      <span class="orc-pag-title">Formas de pagamento</span>
+      <div class="orc-pag-icons">
+        <span class="orc-pag-chip">💠 Pix</span>
+        <span class="orc-pag-chip">💳 Débito</span>
+        <span class="orc-pag-chip">💳 Crédito até 5x</span>
+        <span class="orc-pag-chip">💵 Dinheiro</span>
+      </div>
+    </div>
+
     <div class="modal-number">Número do Orçamento: <strong id="modalNumero"></strong></div>
+    <p class="modal-whats-info">Em breve entraremos em contato pelo WhatsApp <strong id="modalWhats"></strong> para confirmar tudo.</p>
     <button class="btn-primary" onclick="closeModal()">Entendido!</button>
   </div>
 </div>
