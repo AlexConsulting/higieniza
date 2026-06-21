@@ -129,8 +129,9 @@ function getServiceDetailHTML(service) {
           <div class="form-group">
             <label>Itens a higienizar</label>
             <select name="carro_itens">
+              <option value="completo">Completo (bancos + teto + tapetes)</option>
               <option value="bancos">Somente bancos</option>
-              
+              <option value="tapetes">Somente tapetes</option>
             </select>
           </div>
         </div>`
@@ -312,11 +313,21 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
     servicos.push(item);
   });
 
+  // Montar endereço completo com número e complemento
+  const enderecoBase = document.getElementById('endereco').value.trim();
+  const numEndereco = document.getElementById('numero')?.value.trim() || '';
+  const complemento = document.getElementById('complemento')?.value.trim() || '';
+  let enderecoCompleto = enderecoBase;
+  if (numEndereco) enderecoCompleto += `, nº ${numEndereco}`;
+  if (complemento) enderecoCompleto += ` (${complemento})`;
+
   const pedido = {
     nome: document.getElementById('nome').value.trim(),
     whatsapp: document.getElementById('whatsapp').value.trim(),
     cep: document.getElementById('cep').value.replace(/\D/g,''),
-    endereco: document.getElementById('endereco').value.trim(),
+    endereco: enderecoCompleto,
+    numeroEndereco: numEndereco,
+    complemento: complemento,
     observacoes: document.getElementById('obs').value.trim(),
     servicos,
     cupom: appliedCoupon ? appliedCoupon.codigo : null,
@@ -356,6 +367,11 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
     document.getElementById('modalNumero').textContent = pedido.numero;
     document.getElementById('successModal').classList.add('open');
 
+    // Rastreia conversão no Meta Pixel (orçamento enviado)
+    if (typeof fbq !== 'undefined') {
+      fbq('track', 'Lead', { content_name: 'Orçamento solicitado' });
+    }
+
     e.target.reset();
     selectedServices.clear();
     serviceOptions.forEach(o => o.classList.remove('selected'));
@@ -367,7 +383,7 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
     showToast('Erro ao enviar. Tente novamente ou fale pelo WhatsApp.', 'error');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> Solicitar Orçamento Grátis';
+    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Orçamento em 5 minutos';
   }
 });
 

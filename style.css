@@ -1915,6 +1915,38 @@ tr:hover td { background: var(--bg-alt); }
   .user-email { display: none; }
 }
 
+/* WHATSAPP FLUTUANTE */
+.whatsapp-float {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 60px;
+  height: 60px;
+  background: #25d366;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 24px rgba(37,211,102,0.45);
+  z-index: 1500;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  animation: wppPulse 2.5s infinite;
+}
+.whatsapp-float:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 32px rgba(37,211,102,0.6);
+}
+@keyframes wppPulse {
+  0% { box-shadow: 0 6px 24px rgba(37,211,102,0.45), 0 0 0 0 rgba(37,211,102,0.5); }
+  70% { box-shadow: 0 6px 24px rgba(37,211,102,0.45), 0 0 0 16px rgba(37,211,102,0); }
+  100% { box-shadow: 0 6px 24px rgba(37,211,102,0.45), 0 0 0 0 rgba(37,211,102,0); }
+}
+@media (max-width: 768px) {
+  .whatsapp-float { width: 54px; height: 54px; bottom: 18px; right: 18px; }
+  .whatsapp-float svg { width: 28px; height: 28px; }
+}
+
 /* LOADING SPINNER */
 .spinner {
   width: 20px; height: 20px;
