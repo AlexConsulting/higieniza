@@ -422,7 +422,6 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
     window._ultimoOrcamentoId = novoRef.key;
 
     // Mostrar modal
-    document.getElementById('modalWhats').textContent = pedido.whatsapp;
     document.getElementById('modalNumero').textContent = pedido.numero;
 
     // Calcula e exibe o valor estimado + parcelamento
