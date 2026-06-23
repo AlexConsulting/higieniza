@@ -1,0 +1,58 @@
+==========================================================
+REGRAS DO REALTIME DATABASE — Higieniza Aí
+==========================================================
+
+IMPORTANTE: Cole estas regras no Firebase para o agendamento
+automático funcionar.
+
+Como aplicar:
+1. Acesse o Firebase Console (console.firebase.google.com)
+2. Vá em "Realtime Database" -> aba "Regras" (Rules)
+3. Apague o conteúdo atual e cole o JSON abaixo
+4. Clique em "Publicar"
+
+==========================================================
+COLE ISTO:
+==========================================================
+
+{
+  "rules": {
+    "orcamentos": {
+      ".read": true,
+      ".write": true,
+      ".indexOn": ["criadoEm", "status"]
+    },
+    "agendamentos": {
+      ".read": true,
+      ".write": true,
+      ".indexOn": ["data", "criadoEm"]
+    },
+    "slots": {
+      ".read": true,
+      ".write": true
+    },
+    "cupons": {
+      ".read": true,
+      ".write": true,
+      ".indexOn": ["codigo"]
+    },
+    "config": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}
+
+==========================================================
+O QUE MUDOU:
+==========================================================
+- Adicionado o nó "slots": é a "trava" que garante que nunca
+  haja dois agendamentos no mesmo dia/horário. Cada horário
+  reservado vira uma chave dentro de slots/DATA/HORA.
+
+- Adicionado índice "data" em agendamentos para busca rápida
+  por dia.
+
+OBS: Estas regras são abertas (qualquer um lê/escreve), o que
+é adequado para começar. No futuro, se quiser mais segurança,
+podemos restringir a escrita com autenticação — me avise.

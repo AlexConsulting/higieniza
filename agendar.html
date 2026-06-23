@@ -12,11 +12,7 @@
 <nav class="navbar scrolled" id="navbar">
   <div class="nav-container">
     <a href="index.html" class="nav-logo">
-      <div class="logo-circle">h</div>
-      <div class="logo-text">
-        <span class="logo-main">Higieniza Aí</span>
-        <span class="logo-sub">Lavagem a Seco</span>
-      </div>
+      <img src="img/logo_frente.png" alt="Higieniza Aí" class="logo-img" />
     </a>
     <div class="nav-actions">
       <button class="theme-toggle" id="themeToggle">
@@ -32,6 +28,7 @@
       <div class="agendar-header">
         <h2>Confirme seu Agendamento 📅</h2>
         <p>Escolha o melhor dia e horário para a visita do nosso técnico</p>
+        <p style="font-size:0.8rem;color:var(--text-mid);margin-top:6px">🕐 Atendimento: Segunda a Sábado, das 09h às 18h</p>
       </div>
 
       <div class="summary-box">
@@ -47,6 +44,7 @@
         </div>
       </div>
 
+      <!-- STEP 1: DATA -->
       <div id="stepData">
         <h4 style="font-size:0.85rem;font-weight:700;margin-bottom:12px">1. Escolha a data</h4>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -57,11 +55,13 @@
         <div class="calendar-grid" id="calendarGrid"></div>
       </div>
 
+      <!-- STEP 2: HORÁRIO -->
       <div id="stepHorario" style="display:none;margin-top:24px">
         <h4 style="font-size:0.85rem;font-weight:700;margin-bottom:12px">2. Escolha o horário</h4>
         <div class="time-slots" id="timeSlots"></div>
       </div>
 
+      <!-- CONFIRMAR -->
       <div id="stepConfirmar" style="display:none;margin-top:28px">
         <div class="alert-banner success" style="margin-bottom:16px">
           ✓ <span>Você selecionou: <strong id="resumoDataHora"></strong></span>
@@ -80,6 +80,7 @@
   </div>
 </div>
 
+<!-- MODAL CONFIRMAÇÃO -->
 <div class="modal-overlay" id="confirmModal">
   <div class="modal">
     <div class="modal-icon">🎉</div>
@@ -93,7 +94,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, get, push, update, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getDatabase, ref, get, set, push, update, query, orderByChild, equalTo, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBQK22pp_RR1Hfd47rM9jNBiuZRh7DsQpg",
@@ -107,11 +108,7 @@
   };
   const app = initializeApp(firebaseConfig);
   window._db = getDatabase(app);
-  window._rtdb = { ref, get, push, update, query, orderByChild, equalTo };
-
-  // Dispara evento avisando o escopo global que o Firebase está pronto para as consultas
-  console.log("🟢 [LOG] Firebase Realtime Database carregado e exposto com sucesso.");
-  window.dispatchEvent(new Event('firebasePronto'));
+  window._rtdb = { ref, get, set, push, update, query, orderByChild, equalTo, runTransaction };
 </script>
 
 <script>
@@ -133,7 +130,7 @@ let dataSelecionada = null;
 let horaSelecionada = null;
 let orcamentoData = null;
 
-const HORARIOS = ['08:00','09:00','10:00','11:00','13:00','14:00','15:00','16:00','17:00'];
+const HORARIOS = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
 
 async function carregarOrcamento() {
   if (!orcId) {
@@ -148,11 +145,16 @@ async function carregarOrcamento() {
     if (snap.exists()) {
       orcamentoData = snap.val();
       document.getElementById('sumNumero').textContent = orcamentoData.numero || '—';
-      document.getElementById('sumServicos').textContent = (orcamentoData.servicos || []).map(s => s.tipo).join(', ');
-      document.getElementById('sumValor').textContent = `R$ ${(orcamentoData.valorFinal || 0).toFixed(2).replace('.',',')}`;
+      document.getElementById('sumServicos').textContent = (orcamentoData.servicos || []).map(s => {
+        if (s.tipo === 'sofa') return `Sofá (${s.pessoas || '?'} pessoas)`;
+        return s.tipo;
+      }).join(', ') || '—';
+      const valor = orcamentoData.valorEstimado || orcamentoData.valorFinal || 0;
+      document.getElementById('sumValor').textContent = `R$ ${valor.toFixed(2).replace('.',',')}`;
+    } else {
+      document.getElementById('sumServicos').textContent = 'Orçamento não encontrado';
     }
   } catch(e) {
-    console.error("Erro ao carregar orçamento:", e);
     document.getElementById('sumServicos').textContent = 'Erro ao carregar orçamento';
   }
 }
@@ -200,28 +202,49 @@ window.selecionarData = async function(dia) {
 
 async function renderHorarios() {
   const slots = document.getElementById('timeSlots');
-  slots.innerHTML = '';
+  slots.innerHTML = '<div style="color:var(--text-mid);font-size:0.85rem">Carregando horários...</div>';
 
-  // Buscar horários já ocupados nessa data
+  // Buscar horários já ocupados nessa data (lê a trava de slots)
   let ocupados = [];
+  const dataStr = ymd(dataSelecionada);
   try {
-    const { ref, get, query, orderByChild, equalTo } = window._rtdb;
-    const dataStr = dataSelecionada.toISOString().split('T')[0];
-    const q = query(ref(window._db, 'agendamentos'), orderByChild('data'), equalTo(dataStr));
-    const snap = await get(q);
-    if (snap.exists()) snap.forEach(c => ocupados.push(c.val().hora));
-  } catch(e) {
-    console.error("Erro ao verificar slots ocupados:", e);
-  }
+    const { ref, get } = window._rtdb;
+    const snap = await get(ref(window._db, `slots/${dataStr}`));
+    if (snap.exists()) {
+      const val = snap.val();
+      ocupados = Object.keys(val).filter(h => val[h]); // horas marcadas como true/ocupadas
+    }
+  } catch(e) {}
 
+  // Verifica se a data selecionada é hoje (para bloquear horas que já passaram)
+  const agora = new Date();
+  const ehHoje = dataSelecionada.getFullYear() === agora.getFullYear()
+    && dataSelecionada.getMonth() === agora.getMonth()
+    && dataSelecionada.getDate() === agora.getDate();
+
+  slots.innerHTML = '';
+  let algumLivre = false;
   HORARIOS.forEach(h => {
-    const taken = ocupados.includes(h);
+    const horaNum = parseInt(h.split(':')[0]);
+    const jaPassou = ehHoje && horaNum <= agora.getHours();
+    const taken = ocupados.includes(h) || jaPassou;
     const el = document.createElement('div');
     el.className = `time-slot ${taken ? 'taken' : ''}`;
     el.textContent = h;
-    if (!taken) el.onclick = () => selecionarHora(h, el);
+    if (!taken) { el.onclick = () => selecionarHora(h, el); algumLivre = true; }
     slots.appendChild(el);
   });
+
+  if (!algumLivre) {
+    slots.innerHTML = '<div style="color:var(--text-mid);font-size:0.9rem;padding:8px">Nenhum horário disponível neste dia. Escolha outra data.</div>';
+  }
+}
+
+// Formata data como YYYY-MM-DD sem problema de fuso
+function ymd(d) {
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dia = String(d.getDate()).padStart(2,'0');
+  return `${d.getFullYear()}-${m}-${dia}`;
 }
 
 window.selecionarHora = function(hora, el) {
@@ -238,18 +261,53 @@ window.selecionarHora = function(hora, el) {
 window.confirmarAgendamento = async function() {
   if (!dataSelecionada || !horaSelecionada) { showToast('Selecione data e horário!', 'error'); return; }
 
-  const dataStr = dataSelecionada.toISOString().split('T')[0];
+  const btnConfirm = document.querySelector('#stepConfirmar .btn-submit');
+  if (btnConfirm) { btnConfirm.disabled = true; btnConfirm.textContent = 'Confirmando...'; }
+
+  const dataStr = ymd(dataSelecionada);
   const dataFmt = dataSelecionada.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const horaKey = horaSelecionada.replace(':', 'h'); // ex: "09h00" (chave sem caracteres proibidos)
 
   try {
-    const { ref, push, update } = window._rtdb;
+    const { ref, runTransaction, push, update } = window._rtdb;
+
+    // === TRAVA ATÔMICA: tenta reservar o slot ===
+    // Se já estiver ocupado, a transação aborta e ninguém sobrescreve.
+    const slotRef = ref(window._db, `slots/${dataStr}/${horaKey}`);
+    const resultado = await runTransaction(slotRef, (atual) => {
+      if (atual) {
+        return; // já ocupado -> aborta a transação
+      }
+      return {
+        ocupado: true,
+        numero: orcamentoData?.numero || 'DEMO',
+        cliente: orcamentoData?.nome || 'Cliente',
+        criadoEm: Date.now()
+      };
+    });
+
+    if (!resultado.committed) {
+      // Outro cliente pegou esse horário primeiro
+      showToast('Ops! Esse horário acabou de ser reservado. Escolha outro.', 'error');
+      if (btnConfirm) { btnConfirm.disabled = false; btnConfirm.innerHTML = '✓ Confirmar Agendamento'; }
+      document.getElementById('stepConfirmar').style.display = 'none';
+      await renderHorarios(); // recarrega para refletir o que foi ocupado
+      return;
+    }
+
+    // === Slot reservado com sucesso. Registra o agendamento completo ===
     await push(ref(window._db, 'agendamentos'), {
       orcamentoId: orcId || 'demo',
       numero: orcamentoData?.numero || 'DEMO',
       cliente: orcamentoData?.nome || 'Cliente',
       whatsapp: orcamentoData?.whatsapp || '',
+      endereco: orcamentoData?.endereco || '',
+      servicos: orcamentoData?.servicos || [],
+      valor: orcamentoData?.valorEstimado || orcamentoData?.valorFinal || 0,
       data: dataStr,
+      dataFmt: dataFmt,
       hora: horaSelecionada,
+      status: 'confirmado',
       criadoEm: Date.now()
     });
 
@@ -264,19 +322,25 @@ window.confirmarAgendamento = async function() {
     // Notificar admin via WhatsApp
     const adminWhats = '5511992067073';
     const msg = encodeURIComponent(
-      `✅ *AGENDAMENTO CONFIRMADO!*\n\n` +
+      `✅ *NOVO AGENDAMENTO!*\n\n` +
       `📋 Orçamento: ${orcamentoData?.numero || 'DEMO'}\n` +
       `👤 Cliente: ${orcamentoData?.nome || 'Cliente'}\n` +
-      `📅 Data: ${dataFmt}\n` +
-      `🕐 Horário: ${horaSelecionada}\n\n` +
-      `_Horário bloqueado na agenda._`
+      `📱 ${orcamentoData?.whatsapp || ''}\n` +
+      `📍 ${orcamentoData?.endereco || ''}\n` +
+      `📅 ${dataFmt}\n` +
+      `🕐 ${horaSelecionada}\n\n` +
+      `_Horário reservado automaticamente._`
     );
     window.open(`https://wa.me/${adminWhats}?text=${msg}`, '_blank');
 
-  } catch(e) { console.error(e); }
+    document.getElementById('modalDataHora').textContent = `${dataFmt} às ${horaSelecionada}`;
+    document.getElementById('confirmModal').classList.add('open');
 
-  document.getElementById('modalDataHora').textContent = `${dataFmt} às ${horaSelecionada}`;
-  document.getElementById('confirmModal').classList.add('open');
+  } catch(e) {
+    console.error(e);
+    showToast('Erro ao confirmar. Tente novamente.', 'error');
+    if (btnConfirm) { btnConfirm.disabled = false; btnConfirm.innerHTML = '✓ Confirmar Agendamento'; }
+  }
 };
 
 window.falarEspecialista = function() {
@@ -293,17 +357,8 @@ function showToast(msg, type = 'info') {
   setTimeout(() => el.remove(), 5000);
 }
 
-// Inicializador seguro: Executa imediatamente se o Firebase já estiver no escopo global,
-// ou aguarda o disparo do evento modular garantindo sincronismo perfeito em redes oscilantes.
-if (window._db && window._rtdb) {
-  carregarOrcamento();
-  renderCalendar();
-} else {
-  window.addEventListener('firebasePronto', () => {
-    carregarOrcamento();
-    renderCalendar();
-  });
-}
+carregarOrcamento();
+renderCalendar();
 </script>
 </body>
 </html>

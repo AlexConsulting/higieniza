@@ -1265,6 +1265,41 @@ function iniciarEscutaTempoReal() {
     console.error('🔴 [LOG] ERRO na escuta em tempo real:', err);
     console.error('🔴 [LOG] Mensagem:', err.message, '— Provável bloqueio nas REGRAS do banco.');
   });
+
+  // === ESCUTA DE AGENDAMENTOS (novo fluxo automático) ===
+  iniciarEscutaAgendamentos();
+}
+
+let qtdAgendamentosConhecida = null;
+function iniciarEscutaAgendamentos() {
+  const { ref, onValue } = window._rtdb;
+  onValue(ref(window._db, 'agendamentos'), (snap) => {
+    const ags = [];
+    if (snap.exists()) snap.forEach(c => ags.push({ id: c.key, ...c.val() }));
+    ags.sort((a,b) => (b.criadoEm||0)-(a.criadoEm||0));
+
+    if (qtdAgendamentosConhecida === null) {
+      qtdAgendamentosConhecida = ags.length;
+      return;
+    }
+    if (ags.length > qtdAgendamentosConhecida) {
+      dispararAlertaNovoAgendamento(ags[0]);
+      carregarDashboard();
+      if (paginaAtual === 'agenda') carregarAgenda();
+    }
+    qtdAgendamentosConhecida = ags.length;
+  }, (err) => {
+    console.error('🔴 [LOG] ERRO na escuta de agendamentos:', err.message);
+  });
+}
+
+function dispararAlertaNovoAgendamento(ag) {
+  tocarSino();
+  const nome = ag?.cliente || 'Cliente';
+  const quando = ag?.dataFmt ? `${ag.dataFmt} às ${ag.hora}` : `${ag?.data} ${ag?.hora}`;
+  toast(`📅 NOVO AGENDAMENTO! ${nome} — ${quando}`, 'success');
+  enviarPush('Novo agendamento confirmado!', `${nome} agendou para ${quando}`);
+  piscarTitulo();
 }
 
 function dispararAlertaNovoPedido(pedido) {

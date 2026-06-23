@@ -604,8 +604,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
 
     <div class="modal-number">Número do Orçamento: <strong id="modalNumero"></strong></div>
-    <p class="modal-whats-info">Em breve entraremos em contato pelo WhatsApp <strong id="modalWhats"></strong> para confirmar tudo.</p>
-    <button class="btn-primary" onclick="closeModal()">Entendido!</button>
+    <p class="modal-whats-info">Gostou do valor? Agende agora o melhor horário, ou fale com nosso especialista.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+      <button class="btn-primary" id="btnAgendar" onclick="irParaAgendamento()">📅 Agendar agora</button>
+      <a href="https://wa.me/5511992067073?text=Ol%C3%A1%2C%20recebi%20meu%20or%C3%A7amento%20e%20gostaria%20de%20falar%20com%20um%20especialista" target="_blank" class="btn-secondary">💬 Falar com Especialista</a>
+    </div>
   </div>
 </div>
 

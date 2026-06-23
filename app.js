@@ -391,6 +391,7 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
   if (numEndereco) enderecoCompleto += `, nº ${numEndereco}`;
   if (complemento) enderecoCompleto += ` (${complemento})`;
 
+  const valorEstimado = calcularEstimativa(servicos);
   const pedido = {
     nome: document.getElementById('nome').value.trim(),
     whatsapp: document.getElementById('whatsapp').value.trim(),
@@ -400,8 +401,9 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
     complemento: complemento,
     observacoes: document.getElementById('obs').value.trim(),
     servicos,
+    valorEstimado: valorEstimado,
     cupom: appliedCoupon ? appliedCoupon.codigo : null,
-    status: 'novo',
+    status: 'pre-aprovado',
     criadoEm: Date.now(),
     numero: null
   };
@@ -415,29 +417,16 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
     const total = snap.exists() ? Object.keys(snap.val()).length : 0;
     pedido.numero = `ORC-${String(total + 1).padStart(4,'0')}`;
 
-    await push(ref(db, 'orcamentos'), pedido);
-
-    // Notificar admin via WhatsApp (substitua pelo número do admin)
-    const adminWhats = '5511992067073';
-    const msg = encodeURIComponent(
-      `🔔 *Novo Pedido de Orçamento!*\n\n` +
-      `📋 *Número:* ${pedido.numero}\n` +
-      `👤 *Cliente:* ${pedido.nome}\n` +
-      `📱 *WhatsApp:* ${pedido.whatsapp}\n` +
-      `📍 *Endereço:* ${pedido.endereco}\n` +
-      `🛋️ *Serviços:* ${servicos.map(s => `${s.tipo} (${s.subtipo})`).join(', ')}\n` +
-      `${appliedCoupon ? `🎟️ *Cupom:* ${appliedCoupon.codigo} (${appliedCoupon.desconto}%)\n` : ''}` +
-      `\n_Acesse o painel para calcular e enviar o orçamento._`
-    );
-    // Abre WA em nova aba (admin recebe notificação)
-    window.open(`https://wa.me/${adminWhats}?text=${msg}`, '_blank');
+    // Salva e captura o ID gerado (para vincular ao agendamento)
+    const novoRef = await push(ref(db, 'orcamentos'), pedido);
+    window._ultimoOrcamentoId = novoRef.key;
 
     // Mostrar modal
     document.getElementById('modalWhats').textContent = pedido.whatsapp;
     document.getElementById('modalNumero').textContent = pedido.numero;
 
     // Calcula e exibe o valor estimado + parcelamento
-    const estimativa = calcularEstimativa(servicos);
+    const estimativa = valorEstimado;
     const fmt = (v) => 'R$ ' + v.toFixed(2).replace('.', ',');
     document.getElementById('orcValorEstimado').textContent = fmt(estimativa);
     const parcela = estimativa / MAX_PARCELAS;
@@ -470,6 +459,16 @@ function closeModal() {
   document.getElementById('successModal').classList.remove('open');
 }
 window.closeModal = closeModal;
+
+// Leva o cliente para a página de agendamento, vinculando o orçamento criado
+window.irParaAgendamento = function() {
+  const id = window._ultimoOrcamentoId;
+  if (id) {
+    window.location.href = `agendar.html?id=${id}`;
+  } else {
+    window.location.href = 'agendar.html';
+  }
+};
 
 // TOAST SYSTEM
 function showToast(msg, type = 'info') {
