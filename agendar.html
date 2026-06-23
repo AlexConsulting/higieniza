@@ -155,6 +155,7 @@ async function carregarOrcamento() {
       document.getElementById('sumServicos').textContent = 'Orçamento não encontrado';
     }
   } catch(e) {
+    console.error('Erro ao carregar orçamento:', e);
     document.getElementById('sumServicos').textContent = 'Erro ao carregar orçamento';
   }
 }
@@ -357,7 +358,22 @@ function showToast(msg, type = 'info') {
   setTimeout(() => el.remove(), 5000);
 }
 
-carregarOrcamento();
+// Aguarda o Firebase (módulo assíncrono) ficar disponível antes de iniciar
+function iniciarPagina() {
+  let tentativas = 0;
+  const espera = setInterval(() => {
+    tentativas++;
+    if (window._db && window._rtdb) {
+      clearInterval(espera);
+      carregarOrcamento();
+    } else if (tentativas > 50) {
+      clearInterval(espera);
+      document.getElementById('sumServicos').textContent = 'Erro ao conectar. Recarregue a página.';
+    }
+  }, 100);
+}
+
+iniciarPagina();
 renderCalendar();
 </script>
 </body>
