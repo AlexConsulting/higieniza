@@ -743,6 +743,10 @@ input, textarea, select, button { font-family: var(--font-body); }
   font-size: 1rem;
   flex-shrink: 0;
 }
+.author-photo {
+  object-fit: cover;
+  border: 2px solid var(--border);
+}
 .testimonial-author strong { display: block; font-size: 0.9rem; }
 .testimonial-author span { font-size: 0.78rem; color: var(--text-mid); }
 
@@ -2016,6 +2020,79 @@ tr:hover td { background: var(--bg-alt); }
 }
 .modal-whats-info strong { color: var(--blue); }
 [data-theme="dark"] .modal-whats-info strong { color: var(--orange); }
+
+/* SELETOR DE PESSOAS (estilo Dr Lavatudo) */
+.sofa-q-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.pessoas-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.pessoa-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.pessoa-btn:hover { border-color: var(--blue); color: var(--blue); }
+.pessoa-btn.selected {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: white;
+}
+.sofa-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-alt);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.sofa-hint-icon { font-size: 1.8rem; flex-shrink: 0; }
+.sofa-hint strong {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.sofa-hint span { font-size: 0.78rem; color: var(--text-mid); line-height: 1.4; }
+
+/* SELETOR DE MODELO (pílulas) */
+.modelo-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.modelo-btn {
+  padding: 9px 16px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.modelo-btn:hover { border-color: var(--blue); color: var(--blue); }
+.modelo-btn.selected {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: white;
+}
 
 /* WHATSAPP FLUTUANTE */
 .whatsapp-float {

@@ -7,26 +7,38 @@
 // Se mudar um preço no painel admin, atualize aqui também.
 // =============================================
 const PRECOS_BASE = {
-  carro:   { hatch: 150, sedan: 170, suv: 200, van: 250, pickup: 220, _default: 170 },
-  sofa:    { '2lugares': 120, '3lugares': 150, '4lugares': 180, '5lugares': 220, chaise: 200, poltrona: 80, _default: 150 },
-  colchao: { solteiro: 100, casal: 130, queen: 160, king: 190, _default: 130 },
-  cadeira: { jantar: 35, escritorio: 70, gamer: 90, cadeirao: 90, _default: 35 }
+  carro:   { bancos: 250, completo: 300, _default: 250 },
+  colchao: { solteiro: 150, '2solteiros': 200, casal: 200, queen: 200, king: 200, _default: 150 },
+  cadeira: { _default: 20 },        // por unidade, mínimo 6
+  poltrona:{ _default: 50 }         // por unidade
 };
-const SOFA_RETRATIL_PCT = 15;      // adicional invisível ao cliente, mas entra no valor
+// Preço do sofá por número de pessoas sentadas
+function precoSofaPorPessoas(n) {
+  n = parseInt(n) || 2;
+  if (n <= 2) return 250;
+  if (n === 3) return 280;
+  if (n === 4) return 300;
+  return 350;                       // 5 ou mais
+}
+const MIN_CADEIRAS = 6;            // pedido mínimo de cadeiras
 const MAX_PARCELAS = 5;            // crédito em até 5x
 
 // Calcula o valor estimado de uma lista de serviços
 function calcularEstimativa(servicos) {
   let total = 0;
   servicos.forEach(s => {
-    const tabela = PRECOS_BASE[s.tipo] || {};
-    let preco = tabela[s.subtipo] != null ? tabela[s.subtipo] : (tabela._default || 0);
-    preco = preco * (s.quantidade || 1);
-    // Adicional de sofá retrátil
-    if (s.tipo === 'sofa' && s.retratil === 'sim') {
-      preco = preco * (1 + SOFA_RETRATIL_PCT / 100);
+    if (s.tipo === 'sofa') {
+      total += precoSofaPorPessoas(s.pessoas);
+    } else if (s.tipo === 'cadeira') {
+      const qtd = Math.max(s.quantidade || MIN_CADEIRAS, MIN_CADEIRAS);
+      total += 20 * qtd;
+    } else if (s.tipo === 'poltrona') {
+      total += 50 * (s.quantidade || 1);
+    } else {
+      const tabela = PRECOS_BASE[s.tipo] || {};
+      let preco = tabela[s.subtipo] != null ? tabela[s.subtipo] : (tabela._default || 0);
+      total += preco * (s.quantidade || 1);
     }
-    total += preco;
   });
   return total;
 }
@@ -132,6 +144,22 @@ function renderServiceDetails() {
   });
 }
 
+// Seletor de número de pessoas (estilo bolinhas)
+window.selecionarPessoas = function(btn) {
+  const container = btn.closest('.pessoas-selector');
+  container.querySelectorAll('.pessoa-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('sofaPessoas').value = btn.dataset.pessoas;
+};
+
+// Seletor de modelo de sofá (pílulas)
+window.selecionarModelo = function(btn) {
+  const container = btn.closest('.modelo-selector');
+  container.querySelectorAll('.modelo-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('sofaModelo').value = btn.dataset.modelo;
+};
+
 function getServiceDetailHTML(service) {
   const configs = {
     carro: {
@@ -151,39 +179,71 @@ function getServiceDetailHTML(service) {
           <div class="form-group">
             <label>Itens a higienizar</label>
             <select name="carro_itens">
-              <option value="completo">Completo (bancos + teto + tapetes)</option>
-              <option value="bancos">Somente bancos</option>
-              <option value="tapetes">Somente tapetes</option>
+              <option value="bancos">Somente bancos (R$ 250)</option>
+              <option value="completo">Bancos + teto (R$ 300)</option>
             </select>
           </div>
         </div>`
     },
     sofa: {
-      label: '🛋️ Sofá / Poltrona',
+      label: '🛋️ Sofá',
+      fields: `
+        <div class="sofa-pessoas-block">
+          <label class="sofa-q-label">Número de pessoas sentadas</label>
+          <div class="pessoas-selector" id="pessoasSelector">
+            ${[2,3,4,5,6,7,8,9,10,11,12].map(n => `<button type="button" class="pessoa-btn" data-pessoas="${n}" onclick="selecionarPessoas(this)">${n}</button>`).join('')}
+          </div>
+          <div class="sofa-hint">
+            <span class="sofa-hint-icon">🛋️</span>
+            <div>
+              <strong>Quantas pessoas cabem sentadas no seu sofá?</strong>
+              <span>Cada pessoa adulta equivale a aproximadamente 60 cm.</span>
+            </div>
+          </div>
+          <input type="hidden" name="sofa_pessoas" id="sofaPessoas" value="" />
+        </div>
+
+        <div class="form-group" style="margin-top:16px">
+          <label class="sofa-q-label">Modelo</label>
+          <div class="modelo-selector" id="modeloSelector">
+            <button type="button" class="modelo-btn" data-modelo="retratil" onclick="selecionarModelo(this)">Sofá Retrátil</button>
+            <button type="button" class="modelo-btn" data-modelo="comum" onclick="selecionarModelo(this)">Sofá Comum</button>
+            <button type="button" class="modelo-btn" data-modelo="canto" onclick="selecionarModelo(this)">Sofá de Canto</button>
+            <button type="button" class="modelo-btn" data-modelo="chaise" onclick="selecionarModelo(this)">Sofá com Chaise</button>
+            <button type="button" class="modelo-btn" data-modelo="cama" onclick="selecionarModelo(this)">Sofá-Cama</button>
+          </div>
+          <input type="hidden" name="sofa_modelo" id="sofaModelo" value="" />
+        </div>
+
+        <div class="detail-grid" style="margin-top:16px">
+          <div class="form-group">
+            <label>Tecido ou couro?</label>
+            <select name="sofa_tecido">
+              <option value="linho">Tecido — Linho / Algodão</option>
+              <option value="chenille">Tecido — Chenille</option>
+              <option value="suede">Tecido — Suéde / Veludo</option>
+              <option value="couro">Couro / Couro sintético</option>
+              <option value="naosei">Não sei informar</option>
+            </select>
+          </div>
+        </div>`
+    },
+    poltrona: {
+      label: '🪑 Poltrona',
       fields: `
         <div class="detail-grid">
           <div class="form-group">
-            <label>Tipo</label>
-            <select name="sofa_tipo">
-              <option value="2lugares">2 lugares</option>
-              <option value="3lugares">3 lugares</option>
-              <option value="4lugares">4 lugares</option>
-              <option value="5lugares">5 lugares ou +</option>
-              <option value="chaise">Com chaise</option>
-              <option value="poltrona">Poltrona</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>É retrátil/reclinável?</label>
-            <select name="sofa_retratil">
-              <option value="nao">Não</option>
-              <option value="sim">Sim</option>
-              <option value="naosei">Não sei informar</option>
+            <label>Quantidade de poltronas</label>
+            <select name="poltrona_qtd">
+              <option value="1">1 poltrona</option>
+              <option value="2">2 poltronas</option>
+              <option value="3">3 poltronas</option>
+              <option value="4">4 poltronas</option>
             </select>
           </div>
           <div class="form-group">
             <label>Tecido ou couro?</label>
-            <select name="sofa_tecido">
+            <select name="poltrona_tecido">
               <option value="linho">Tecido — Linho / Algodão</option>
               <option value="chenille">Tecido — Chenille</option>
               <option value="suede">Tecido — Suéde / Veludo</option>
@@ -200,10 +260,9 @@ function getServiceDetailHTML(service) {
           <div class="form-group">
             <label>Tamanho</label>
             <select name="colchao_tipo">
-              <option value="solteiro">Solteiro</option>
-              <option value="casal">Casal</option>
-              <option value="queen">Queen</option>
-              <option value="king">King</option>
+              <option value="solteiro">Solteiro (R$ 150)</option>
+              <option value="2solteiros">2 Solteiros (R$ 200)</option>
+              <option value="casal">Casal (R$ 200)</option>
             </select>
           </div>
           <div class="form-group">
@@ -221,22 +280,20 @@ function getServiceDetailHTML(service) {
       fields: `
         <div class="detail-grid">
           <div class="form-group">
+            <label>Quantidade (mínimo 6)</label>
+            <select name="cadeira_qtd">
+              <option value="6">6 cadeiras</option>
+              <option value="8">8 cadeiras</option>
+              <option value="10">10 cadeiras</option>
+              <option value="12">12 cadeiras</option>
+            </select>
+          </div>
+          <div class="form-group">
             <label>Tipo</label>
             <select name="cadeira_tipo">
               <option value="jantar">Jantar / Sala</option>
               <option value="escritorio">Escritório</option>
               <option value="gamer">Gamer</option>
-              <option value="cadeirao">Cadeirão</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Quantidade</label>
-            <select name="cadeira_qtd">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="4">4</option>
-              <option value="6">6</option>
-              <option value="8">8 ou +</option>
             </select>
           </div>
         </div>`
@@ -305,13 +362,23 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
   // Coletar dados dos serviços
   const servicos = [];
   selectedServices.forEach(sv => {
-    const tipo = document.querySelector(`[name="${sv}_tipo"]`)?.value || '';
-    const qtd = document.querySelector(`[name="${sv}_qtd"]`)?.value || '1';
-    const item = { tipo: sv, subtipo: tipo, quantidade: parseInt(qtd) || 1 };
-    // Campos extras específicos do sofá
+    const item = { tipo: sv };
     if (sv === 'sofa') {
-      item.retratil = document.querySelector('[name="sofa_retratil"]')?.value || 'nao';
+      item.pessoas = document.getElementById('sofaPessoas')?.value || '2';
+      item.modelo = document.getElementById('sofaModelo')?.value || 'comum';
       item.tecido = document.querySelector('[name="sofa_tecido"]')?.value || 'naosei';
+      item.subtipo = `${item.pessoas} pessoas`;
+      item.quantidade = 1;
+    } else if (sv === 'poltrona') {
+      item.quantidade = parseInt(document.querySelector('[name="poltrona_qtd"]')?.value) || 1;
+      item.tecido = document.querySelector('[name="poltrona_tecido"]')?.value || 'naosei';
+      item.subtipo = `${item.quantidade} un`;
+    } else if (sv === 'cadeira') {
+      item.subtipo = document.querySelector('[name="cadeira_tipo"]')?.value || '';
+      item.quantidade = parseInt(document.querySelector('[name="cadeira_qtd"]')?.value) || 6;
+    } else {
+      item.subtipo = document.querySelector(`[name="${sv}_tipo"]`)?.value || document.querySelector(`[name="${sv}_itens"]`)?.value || '';
+      item.quantidade = parseInt(document.querySelector(`[name="${sv}_qtd"]`)?.value) || 1;
     }
     servicos.push(item);
   });

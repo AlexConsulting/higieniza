@@ -199,32 +199,34 @@ function detectarCidade(endereco) {
 }
 
 function calcularPrecoServico(servico, cfg) {
-  const p = cfg.precos;
   let base = 0;
   const tipo = servico.subtipo || '';
   const qtd = servico.quantidade || 1;
 
   switch(servico.tipo) {
     case 'carro':
-      const mapCarro = { hatch: p.carro_hatch, sedan: p.carro_sedan, suv: p.carro_suv, van: p.carro_van, pickup: p.carro_pickup };
-      base = mapCarro[tipo] || p.carro_hatch;
+      // bancos = 250, completo (bancos+teto) = 300
+      base = tipo === 'completo' ? 300 : 250;
       break;
-    case 'sofa':
-      const mapSofa = { '2lugares': p.sofa_2lugares, '3lugares': p.sofa_3lugares, '4lugares': p.sofa_4lugares, '5lugares': p.sofa_5lugares, chaise: p.sofa_chaise, poltrona: p.sofa_poltrona };
-      base = (mapSofa[tipo] || p.sofa_3lugares) * qtd;
-      // Adicional invisível ao cliente: sofá retrátil dá mais trabalho
-      if (servico.retratil === 'sim') {
-        const pctRetratil = (cfg.precos.sofa_retratil_pct || 0) / 100;
-        base = base * (1 + pctRetratil);
-      }
+    case 'sofa': {
+      // Preço por número de pessoas sentadas
+      const n = parseInt(servico.pessoas) || 2;
+      if (n <= 2) base = 250;
+      else if (n === 3) base = 280;
+      else if (n === 4) base = 300;
+      else base = 350;
       break;
-    case 'colchao':
-      const mapColchao = { solteiro: p.colchao_solteiro, colchao_casal: p.colchao_casal, queen: p.colchao_queen, king: p.colchao_king };
-      base = (mapColchao[tipo] || p.colchao_casal) * qtd;
+    }
+    case 'poltrona':
+      base = 50 * qtd;
       break;
+    case 'colchao': {
+      const mapColchao = { solteiro: 150, '2solteiros': 200, casal: 200, queen: 200, king: 200 };
+      base = (mapColchao[tipo] || 150) * qtd;
+      break;
+    }
     case 'cadeira':
-      const mapCadeira = { jantar: p.cadeira_jantar, escritorio: p.cadeira_escritorio, gamer: p.cadeira_gamer, cadeirao: p.cadeira_escritorio };
-      base = (mapCadeira[tipo] || p.cadeira_jantar) * qtd;
+      base = 20 * Math.max(qtd, 6);   // mínimo 6 cadeiras
       break;
   }
   return base;
@@ -249,7 +251,9 @@ function calcularOrcamentoCompleto(orcamento) {
 
   (orcamento.servicos || []).forEach(sv => {
     const val = calcularPrecoServico(sv, cfg);
-    breakdown.push({ label: `${sv.tipo} (${sv.subtipo})`, valor: val, qtd: sv.quantidade });
+    let label = `${sv.tipo} (${sv.subtipo || ''})`;
+    if (sv.tipo === 'sofa' && sv.pessoas) label = `Sofá (${sv.pessoas} pessoas)`;
+    breakdown.push({ label, valor: val, qtd: sv.quantidade || 1 });
     totalServicos += val;
   });
 
@@ -363,17 +367,20 @@ window.abrirOrcamento = async function(id) {
 
     document.getElementById('oServicos').innerHTML = (d.servicos || []).map(s => {
       let extra = '';
+      const labelTecido = { linho: 'Tecido (Linho/Algodão)', chenille: 'Tecido (Chenille)', suede: 'Tecido (Suéde/Veludo)', couro: 'Couro / Couro sintético', naosei: 'Não sabe' };
       if (s.tipo === 'sofa') {
-        const labelRetratil = { sim: 'Sim', nao: 'Não', naosei: 'Não sabe' };
-        const labelFibra = { sim: 'Sim', nao: 'Não', naosei: 'Não sabe' };
-        const labelTecido = { linho: 'Linho/Algodão', chenille: 'Chenille', couro: 'Couro', suede: 'Suéde/Veludo', naosei: 'Não sabe' };
+        const labelModelo = { retratil: 'Retrátil', comum: 'Comum', canto: 'De Canto', chaise: 'Com Chaise', cama: 'Sofá-Cama' };
         const partes = [];
-        if (s.retratil) partes.push(`Retrátil: ${labelRetratil[s.retratil] || s.retratil}`);
-        if (s.fibra) partes.push(`Fibra original: ${labelFibra[s.fibra] || s.fibra}`);
-        if (s.tecido) partes.push(`Tecido: ${labelTecido[s.tecido] || s.tecido}`);
+        if (s.pessoas) partes.push(`${s.pessoas} pessoas`);
+        if (s.modelo) partes.push(`Modelo: ${labelModelo[s.modelo] || s.modelo}`);
+        if (s.tecido) partes.push(`Material: ${labelTecido[s.tecido] || s.tecido}`);
+        // compatibilidade com pedidos antigos
+        if (s.retratil && !s.modelo) partes.push(`Retrátil: ${s.retratil}`);
         if (partes.length) extra = `<div style="font-size:0.78rem;color:var(--text-mid);padding:2px 0 8px">↳ ${partes.join(' · ')}</div>`;
+      } else if (s.tipo === 'poltrona' && s.tecido) {
+        extra = `<div style="font-size:0.78rem;color:var(--text-mid);padding:2px 0 8px">↳ Material: ${labelTecido[s.tecido] || s.tecido}</div>`;
       }
-      return `<div class="info-row"><span>${s.tipo} — ${s.subtipo}</span><span>Qtd: ${s.quantidade}</span></div>${extra}`;
+      return `<div class="info-row"><span>${s.tipo} — ${s.subtipo || ''}</span><span>Qtd: ${s.quantidade || 1}</span></div>${extra}`;
     }).join('');
 
     let precosHTML = '';
