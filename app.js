@@ -195,7 +195,7 @@ function getServiceDetailHTML(service) {
             ${[2,3,4,5,6,7,8,9,10,11,12].map(n => `<button type="button" class="pessoa-btn" data-pessoas="${n}" onclick="selecionarPessoas(this)">${n}</button>`).join('')}
           </div>
           <div class="sofa-hint">
-            <span class="sofa-hint-icon">🛋️</span>
+            <span class="sofa-hint-icon">️</span>
             <div>
               <strong></strong>
             </div>
