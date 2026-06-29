@@ -190,6 +190,7 @@ function getServiceDetailHTML(service) {
       fields: `
         <div class="sofa-pessoas-block">
           <label class="sofa-q-label">Número de pessoas sentadas</label>
+          <span class="sofa-hint-inline">Cada pessoa adulta equivale a aproximadamente 60 cm.</span>
           <div class="pessoas-selector" id="pessoasSelector">
             ${[2,3,4,5,6,7,8,9,10,11,12].map(n => `<button type="button" class="pessoa-btn" data-pessoas="${n}" onclick="selecionarPessoas(this)">${n}</button>`).join('')}
           </div>
@@ -197,7 +198,6 @@ function getServiceDetailHTML(service) {
             <span class="sofa-hint-icon">🛋️</span>
             <div>
               <strong>Quantas pessoas cabem sentadas no seu sofá?</strong>
-              <span>Cada pessoa adulta equivale a aproximadamente 60 cm.</span>
             </div>
           </div>
           <input type="hidden" name="sofa_pessoas" id="sofaPessoas" value="" />
@@ -450,7 +450,7 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
     showToast('Erro ao enviar. Tente novamente ou fale pelo WhatsApp.', 'error');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Orçamento em 5 minutos';
+    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> Enviar Orçamento';
   }
 });
 

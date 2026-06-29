@@ -1723,6 +1723,9 @@ tr:hover td { background: var(--bg-alt); }
     grid-template-columns: 1fr;
     text-align: center;
   }
+  .hero-title { max-width: 100%; margin-left: auto; margin-right: auto; }
+  .hero-subtitle { max-width: 100%; }
+  .hero-badge { margin-left: auto; margin-right: auto; }
   .hero-visual { display: none; }
   .hero-ctas { justify-content: center; }
   .hero-stats { justify-content: center; }
@@ -2021,6 +2024,39 @@ tr:hover td { background: var(--bg-alt); }
 .modal-whats-info strong { color: var(--blue); }
 [data-theme="dark"] .modal-whats-info strong { color: var(--orange); }
 
+/* Botões full-width do modal de orçamento */
+.btn-agendar-full {
+  width: 100%;
+  justify-content: center;
+  font-size: 1rem;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.btn-especialista-full {
+  width: 100%;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+/* Otimização do modal de orçamento no MOBILE */
+@media (max-width: 768px) {
+  .modal-orcamento { padding: 22px 18px; }
+  .modal-orcamento .modal-icon { font-size: 2rem; margin-bottom: 4px; }
+  .modal-orcamento h3 { font-size: 1.15rem; }
+  .modal-orcamento .modal-sub { font-size: 0.82rem; margin-bottom: 12px; }
+  .orc-price-box { padding: 16px; margin-bottom: 12px; }
+  .orc-price-value { font-size: 2rem; }
+  .orc-price-disclaimer { font-size: 0.68rem; margin-top: 6px; }
+  .orc-pague-depois { padding: 10px 12px; margin-bottom: 12px; }
+  .orc-pague-depois strong { font-size: 0.85rem; }
+  .orc-pague-depois span { font-size: 0.74rem; }
+  .orc-pd-icon { font-size: 1.3rem; }
+  .modal-number { padding: 8px 12px; margin-bottom: 12px; font-size: 0.8rem; }
+  .btn-agendar-full { padding: 14px; font-size: 0.92rem; margin-bottom: 12px; }
+  .orc-pagamentos { margin-bottom: 12px; }
+  .orc-pag-chip { padding: 6px 11px; font-size: 0.74rem; }
+}
+
 /* SELETOR DE PESSOAS (estilo Dr Lavatudo) */
 .sofa-q-label {
   display: block;
@@ -2028,6 +2064,12 @@ tr:hover td { background: var(--bg-alt); }
   font-weight: 600;
   color: var(--text);
   margin-bottom: 12px;
+}
+.sofa-hint-inline {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-mid);
+  margin: -6px 0 12px;
 }
 .pessoas-selector {
   display: flex;
