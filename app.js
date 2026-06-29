@@ -197,7 +197,7 @@ function getServiceDetailHTML(service) {
           <div class="sofa-hint">
             <span class="sofa-hint-icon">🛋️</span>
             <div>
-              <strong>Quantas pessoas cabem sentadas no seu sofá?</strong>
+              <strong></strong>
             </div>
           </div>
           <input type="hidden" name="sofa_pessoas" id="sofaPessoas" value="" />
