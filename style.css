@@ -2031,14 +2031,15 @@ tr:hover td { background: var(--bg-alt); }
   font-size: 1rem;
   padding: 16px;
   margin-bottom: 16px;
-  border: 2px solid var(--orange);
-  animation: agendarPulse 2s infinite;
+  border: 2px solid rgba(255,255,255,0.25);
+  animation: agendarPulse 1.8s ease-in-out infinite;
 }
 @keyframes agendarPulse {
-  0% { box-shadow: 0 4px 20px rgba(13,27,110,0.3), 0 0 0 0 rgba(232,82,26,0.5); }
-  70% { box-shadow: 0 4px 20px rgba(13,27,110,0.3), 0 0 0 12px rgba(232,82,26,0); }
-  100% { box-shadow: 0 4px 20px rgba(13,27,110,0.3), 0 0 0 0 rgba(232,82,26,0); }
+  0% { transform: scale(1); box-shadow: 0 4px 20px rgba(13,27,110,0.35), 0 0 0 0 rgba(42,63,181,0.55); }
+  50% { transform: scale(1.025); box-shadow: 0 8px 28px rgba(13,27,110,0.5), 0 0 0 10px rgba(42,63,181,0); }
+  100% { transform: scale(1); box-shadow: 0 4px 20px rgba(13,27,110,0.35), 0 0 0 0 rgba(42,63,181,0); }
 }
+.btn-agendar-full:hover { animation-play-state: paused; }
 .btn-especialista-full {
   width: 100%;
   justify-content: center;
