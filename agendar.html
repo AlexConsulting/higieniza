@@ -311,13 +311,23 @@ window.confirmarAgendamento = async function() {
       status: 'confirmado',
       criadoEm: Date.now()
     });
+    console.log('✅ Agendamento salvo no nó agendamentos');
 
+    // Atualiza o status do orçamento para "confirmado"
+    console.log('🔑 orcId para atualizar status:', orcId);
     if (orcId) {
-      await update(ref(window._db, `orcamentos/${orcId}`), {
-        status: 'confirmado',
-        dataAgendada: dataStr,
-        horaAgendada: horaSelecionada
-      });
+      try {
+        await update(ref(window._db, `orcamentos/${orcId}`), {
+          status: 'confirmado',
+          dataAgendada: dataStr,
+          horaAgendada: horaSelecionada
+        });
+        console.log('✅ Status do orçamento atualizado para CONFIRMADO');
+      } catch(errUpd) {
+        console.error('🔴 ERRO ao atualizar status do orçamento:', errUpd.message);
+      }
+    } else {
+      console.warn('⚠️ orcId vazio — status do orçamento NÃO foi atualizado. Veio pela URL sem ?id=');
     }
 
     // Notificar admin via WhatsApp

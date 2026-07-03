@@ -322,8 +322,9 @@ function renderTabelaOrcamentos(docs) {
     const servicos = (d.servicos || []).map(s => s.tipo).join(', ');
     const cidadeLabel = d.endereco?.split(' - ')[1]?.split('/')[0] || '—';
 
-    const statusMap = { novo: 'novo', enviado: 'enviado', confirmed: 'confirmado', concluido: 'concluido' };
-    const statusLabel = { novo: '🔵 Novo', enviado: '🟡 Enviado', confirmado: '🟢 Confirmado', concluido: '⚫ Concluído' };
+    const statusMap = { novo: 'novo', 'pre-aprovado': 'enviado', enviado: 'enviado', confirmado: 'confirmado', confirmed: 'confirmado', concluido: 'concluido', cancelado: 'concluido' };
+    const statusLabel = { novo: '🔵 Novo', 'pre-aprovado': '🟠 Pré-aprovado', enviado: '🟡 Enviado', confirmado: '🟢 Confirmado', concluido: '⚫ Concluído', cancelado: '🔴 Cancelado' };
+    const statusAtual = d.status || 'novo';
 
     tbody.innerHTML += `
       <tr>
@@ -333,11 +334,19 @@ function renderTabelaOrcamentos(docs) {
         <td style="font-size:0.8rem">${servicos}</td>
         <td>${cidadeLabel}</td>
         <td><strong>R$ ${(d.valorFinal || calc.total).toFixed(2).replace('.',',')}</strong></td>
-        <td><span class="status-badge ${statusMap[d.status] || 'novo'}">${statusLabel[d.status] || '🔵 Novo'}</span></td>
+        <td><span class="status-badge ${statusMap[statusAtual] || 'novo'}">${statusLabel[statusAtual] || '🔵 Novo'}</span></td>
         <td>
-          <div style="display:flex;gap:6px">
+          <div style="display:flex;gap:6px;align-items:center">
             <button class="btn-sm primary" onclick="abrirOrcamento('${id}')">Ver</button>
-            <button class="btn-sm secondary" onclick="mudarStatus('${id}','concluido')">✓</button>
+            <select class="btn-sm secondary status-select" onchange="mudarStatus('${id}', this.value)" style="cursor:pointer;padding:6px 8px">
+              <option value="" disabled selected>Status ⏷</option>
+              <option value="novo" ${statusAtual==='novo'?'disabled':''}>🔵 Novo</option>
+              <option value="pre-aprovado" ${statusAtual==='pre-aprovado'?'disabled':''}>🟠 Pré-aprovado</option>
+              <option value="enviado" ${statusAtual==='enviado'?'disabled':''}>🟡 Enviado</option>
+              <option value="confirmado" ${statusAtual==='confirmado'?'disabled':''}>🟢 Confirmado</option>
+              <option value="concluido" ${statusAtual==='concluido'?'disabled':''}>⚫ Concluído</option>
+              <option value="cancelado" ${statusAtual==='cancelado'?'disabled':''}>🔴 Cancelado</option>
+            </select>
           </div>
         </td>
       </tr>`;
@@ -449,13 +458,35 @@ window.abrirWhatsCliente = function() {
 };
 
 window.mudarStatus = async function(id, status) {
+  if (!status) return;
   try {
     const db = window._db;
-    const { ref, update } = window._rtdb;
+    const { ref, update, get } = window._rtdb;
+
+    // Busca o orçamento para saber se tinha agendamento (para liberar o slot)
+    const orcSnap = await get(ref(db, `orcamentos/${id}`));
+    const orc = orcSnap.exists() ? orcSnap.val() : null;
+
+    // Se está cancelando ou revertendo um orçamento que estava confirmado,
+    // libera o horário na agenda para outra pessoa poder usar
+    if (orc && orc.status === 'confirmado' && (status === 'cancelado' || status === 'novo' || status === 'enviado' || status === 'pre-aprovado')) {
+      if (orc.dataAgendada && orc.horaAgendada) {
+        const horaKey = orc.horaAgendada.replace(':', 'h');
+        try {
+          await update(ref(db, `slots/${orc.dataAgendada}`), { [horaKey]: null });
+          console.log('🔓 Slot liberado:', orc.dataAgendada, orc.horaAgendada);
+        } catch(e) { console.warn('Não foi possível liberar o slot:', e.message); }
+      }
+    }
+
     await update(ref(db, `orcamentos/${id}`), { status });
-    toast('Status updated! ✓', 'success');
-    carregarOrcamentos();
-  } catch(e) { toast('Erro ao atualizar.', 'error'); }
+    const labels = { novo:'Novo', 'pre-aprovado':'Pré-aprovado', enviado:'Enviado', confirmado:'Confirmado', concluido:'Concluído', cancelado:'Cancelado' };
+    toast(`Status alterado para: ${labels[status] || status} ✓`, 'success');
+    // A tabela atualiza sozinha pela escuta em tempo real
+  } catch(e) {
+    console.error('Erro ao mudar status:', e);
+    toast('Erro ao atualizar status.', 'error');
+  }
 };
 
 window.fecharModalOrc = function() {
