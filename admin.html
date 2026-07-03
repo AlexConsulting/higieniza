@@ -71,6 +71,9 @@
     <a href="#" data-page="clientes">
       <span class="nav-icon">👥</span> Clientes
     </a>
+    <a href="#" data-page="relatorios">
+      <span class="nav-icon">📊</span> Relatórios
+    </a>
     <a href="#" data-page="cupons">
       <span class="nav-icon">🎟️</span> Cupons
     </a>
@@ -314,8 +317,14 @@
     <div id="page-clientes" class="page" style="display:none">
       <div class="table-card">
         <div class="table-header">
-          <h3>Histórico de Clientes</h3>
-          <input type="text" id="searchCliente" placeholder="Buscar por nome ou WhatsApp..." style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--bg);color:var(--text);outline:none;width:240px" />
+          <h3>Carteira de Clientes</h3>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <select id="filterCarteira" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--bg);color:var(--text);cursor:pointer">
+              <option value="ativa">💼 Carteira ativa (confirmados + concluídos)</option>
+              <option value="todos">Todos os contatos</option>
+            </select>
+            <input type="text" id="searchCliente" placeholder="Buscar por nome ou WhatsApp..." style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--bg);color:var(--text);outline:none;width:220px" />
+          </div>
         </div>
         <div style="overflow-x:auto">
           <table>
@@ -327,11 +336,81 @@
                 <th>Serviços</th>
                 <th>Total Gasto</th>
                 <th>Último Serviço</th>
+                <th>Situação</th>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody id="tabelaClientes">
-              <tr><td colspan="7" style="text-align:center;color:var(--text-mid);padding:40px">Carregando...</td></tr>
+              <tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:40px">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-relatorios" class="page" style="display:none">
+      <div class="table-header" style="margin-bottom:20px">
+        <h3>📊 Relatório de Atendimentos Realizados</h3>
+        <div style="display:flex;gap:8px">
+          <button class="btn-sm primary" id="btnRelSemanal" onclick="mudarPeriodoRelatorio('semanal')">Semanal</button>
+          <button class="btn-sm secondary" id="btnRelMensal" onclick="mudarPeriodoRelatorio('mensal')">Mensal</button>
+          <button class="btn-sm secondary" onclick="exportarRelatorioAtendimentos()">📥 Exportar CSV</button>
+        </div>
+      </div>
+
+      <div class="dashboard-grid" style="margin-bottom:24px">
+        <div class="dash-card">
+          <div class="dash-card-label">Atendimentos Realizados</div>
+          <div class="dash-card-value" id="relQtd">0</div>
+          <div class="dash-card-accent"></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-label">Faturamento</div>
+          <div class="dash-card-value" id="relFaturamento">R$ 0</div>
+          <div class="dash-card-accent"></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-label">Ticket Médio</div>
+          <div class="dash-card-value" id="relTicket">R$ 0</div>
+          <div class="dash-card-accent"></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-label">Clientes Atendidos</div>
+          <div class="dash-card-value" id="relClientes">0</div>
+          <div class="dash-card-accent"></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px" class="rel-charts-grid">
+        <div class="chart-card">
+          <div class="chart-card-header"><h3>Serviços mais realizados</h3></div>
+          <canvas id="chartRelServicos" height="140"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header"><h3>Atendimentos por cidade</h3></div>
+          <canvas id="chartRelCidades" height="140"></canvas>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3 id="relTituloLista">Atendimentos do período</h3>
+          <span id="relPeriodoLabel" style="font-size:0.82rem;color:var(--text-mid)"></span>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Nº</th>
+                <th>Data</th>
+                <th>Cliente</th>
+                <th>Serviços</th>
+                <th>Cidade</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaRelatorio">
+              <tr><td colspan="6" style="text-align:center;color:var(--text-mid);padding:40px">Carregando...</td></tr>
             </tbody>
           </table>
         </div>

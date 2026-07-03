@@ -343,6 +343,7 @@ input, textarea, select, button { font-family: var(--font-body); }
 .br-desktop { display: inline; }
 @media (max-width: 768px) {
   .br-desktop { display: none; }
+  .rel-charts-grid { grid-template-columns: 1fr !important; }
 }
 .gradient-text {
   background: linear-gradient(135deg, var(--orange), #ff8c42);

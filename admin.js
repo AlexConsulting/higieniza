@@ -59,6 +59,7 @@ function navegarPara(page) {
     agenda: 'Agenda',
     financeiro: 'Financeiro',
     clientes: 'Clientes',
+    relatorios: 'Relatórios',
     cupons: 'Cupons',
     configuracoes: 'Configurações'
   }[page] || page;
@@ -67,6 +68,7 @@ function navegarPara(page) {
   if (page === 'agenda') renderAdminCalendar();
   if (page === 'financeiro') renderFinanceiro();
   if (page === 'clientes') carregarClientes();
+  if (page === 'relatorios') renderRelatorios();
   if (page === 'cupons') carregarCupons();
   if (page === 'configuracoes') carregarConfiguracoes();
 }
@@ -898,113 +900,81 @@ async function renderFinanceiro() {
 // CLIENTES
 // =============================================
 function carregarClientes() {
-  console.log('👥 [LOG] Executando carregarClientes() corrigido individualmente...');
-  const container = document.getElementById('page-clientes');
-  if (!container) return;
+  renderTabelaClientes(ORCAMENTOS);
+}
 
-  // 1. Filtra estritamente apenas os registros que foram CONFIRMADOS
-  const orcamentosConfirmados = ORCAMENTOS.filter(d => 
-    d.status === 'confirmado' || d.status === 'confirmed'
-  );
+function renderTabelaClientes(docsEntrada) {
+  const tbody = document.getElementById('tabelaClientes');
+  if (!tbody) return;
 
-  // Monta a estrutura da tabela idêntica ao padrão visual do seu sistema
-  container.innerHTML = `
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">👥 Clientes com Agendamentos Confirmados</h3>
-      </div>
-      <div class="table-responsive" style="padding: 10px;">
-        <table class="admin-table" style="width: 100%; border-collapse: collapse; text-align: left;">
-          <thead>
-            <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-mid);">
-              <th style="padding: 12px;">Cliente</th>
-              <th style="padding: 12px;">WhatsApp</th>
-              <th style="padding: 12px;">Data / Horário</th>
-              <th style="padding: 12px;">Cidade / Bairro</th>
-              <th style="padding: 12px;">Serviço Realizado</th>
-              <th style="padding: 12px; text-align: right;">Valor do Pedido</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-clientes-lista">
-            </tbody>
-        </table>
-      </div>
-    </div>
-  `;
+  try {
+    let docs = (docsEntrada || []).slice();
 
-  const tbody = document.getElementById('tbody-clientes-lista');
-
-  if (orcamentosConfirmados.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" style="text-align: center; color: var(--text-mid); padding: 30px;">
-          Nenhum cliente confirmado localizado no momento.
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  // 2. Ordena para mostrar os agendamentos mais recentes primeiro
-  orcamentosConfirmados.sort((a, b) => {
-    const dataA = a.dataAgendada ? new Date(a.dataAgendada) : new Date(0);
-    const dataB = b.dataAgendada ? new Date(b.dataAgendada) : new Date(0);
-    return dataB - dataA;
-  });
-
-  // 3. Renderiza cada registro de forma individual e única (Sem somar por cidade!)
-  orcamentosConfirmados.forEach(cli => {
-    // Formatação amigável da data
-    let dataFmt = 'Sem data';
-    if (cli.dataAgendada) {
-      const partes = cli.dataAgendada.split('-');
-      if (partes.length === 3) dataFmt = `${partes[2]}/${partes[1]}/${partes[0]}`;
-      else dataFmt = cli.dataAgendada;
+    // Filtro carteira ativa (confirmados + concluídos) vs todos
+    const filtro = document.getElementById('filterCarteira')?.value || 'ativa';
+    if (filtro === 'ativa') {
+      docs = docs.filter(d => d.status === 'confirmado' || d.status === 'concluido' || d.status === 'confirmed');
     }
-    const horario = cli.horaAgendada || 'S/H';
 
-    // Limpa e extrai a localização para exibição amigável
-    let localizacao = 'Não informada';
-    if (cli.endereco) {
-      const partesEnd = cli.endereco.split('-');
-      if (partesEnd.length >= 2) {
-        localizacao = partesEnd[partesEnd.length - 2].trim() + ' - ' + partesEnd[partesEnd.length - 1].trim();
-      } else {
-        localizacao = cli.endereco;
+    // Busca por nome/whatsapp
+    const termo = (document.getElementById('searchCliente')?.value || '').toLowerCase();
+    if (termo) {
+      docs = docs.filter(d => (d.nome||'').toLowerCase().includes(termo) || (d.whatsapp||'').includes(termo));
+    }
+
+    // Agrupa por cliente (carteira: cada pessoa aparece uma vez)
+    const clientesMap = {};
+    docs.forEach(d => {
+      const key = d.whatsapp || d.nome;
+      if (!key) return;
+      if (!clientesMap[key]) {
+        clientesMap[key] = {
+          nome: d.nome, whatsapp: d.whatsapp,
+          cidade: d.endereco?.split(' - ')[1]?.split('/')[0] || '—',
+          servicos: 0, total: 0,
+          ultimo: d.criadoEm || 0,
+          temConcluido: false, temConfirmado: false
+        };
       }
+      const c = clientesMap[key];
+      c.servicos += (d.servicos || []).length;
+      c.total += d.valorEstimado || d.valorFinal || calcularOrcamentoCompleto(d).total;
+      if (d.criadoEm > c.ultimo) c.ultimo = d.criadoEm;
+      if (d.status === 'concluido') c.temConcluido = true;
+      if (d.status === 'confirmado' || d.status === 'confirmed') c.temConfirmado = true;
+    });
+
+    const clientes = Object.values(clientesMap).sort((a,b) => b.ultimo - a.ultimo);
+
+    if (clientes.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-mid);padding:40px">Nenhum cliente nesta carteira ainda.</td></tr>';
+      return;
     }
 
-    // Lista os serviços deste pedido específico
-    const listaServicos = (cli.servicos || []).map(s => s.tipo).join(', ') || 'Higienização';
-    const valorPedido = cli.valorFinal || 0;
-
-    tbody.innerHTML += `
-      <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-main);">
-        <td style="padding: 12px; font-weight: 600;">
-          ${cli.nome} <br>
-          <span style="font-size: 0.75rem; color: var(--text-mid); font-weight: normal;">ID: ${cli.numero || 'S/N'}</span>
-        </td>
-        <td style="padding: 12px;">
-          <a href="https://wa.me/${cli.whatsapp}" target="_blank" style="color: var(--blue); text-decoration: underline;">
-            ${cli.whatsapp}
-          </a>
-        </td>
-        <td style="padding: 12px; font-weight: 500;">
-          📅 ${dataFmt} <br>
-          <span style="font-size: 0.85rem; color: var(--text-mid);">⏰ ${horario}</span>
-        </td>
-        <td style="padding: 12px; font-size: 0.9rem;">
-          ${localizacao}
-        </td>
-        <td style="padding: 12px; font-size: 0.9rem; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${listaServicos}">
-          ${listaServicos}
-        </td>
-        <td style="padding: 12px; text-align: right; font-weight: bold; color: #22c55e;">
-          R$ ${valorPedido.toFixed(2).replace('.', ',')}
-        </td>
-      </tr>
-    `;
-  });
+    tbody.innerHTML = '';
+    clientes.forEach(c => {
+      const wpp = (c.whatsapp||'').replace(/\D/g,'');
+      const ultimoFmt = c.ultimo ? new Date(c.ultimo).toLocaleDateString('pt-BR') : '—';
+      // Situação: concluído tem prioridade visual
+      let situacao = c.temConcluido
+        ? '<span class="status-badge concluido">⚫ Cliente</span>'
+        : '<span class="status-badge confirmado">🟢 Agendado</span>';
+      tbody.innerHTML += `
+        <tr>
+          <td><strong>${c.nome}</strong></td>
+          <td>${c.whatsapp||'—'}</td>
+          <td>${c.cidade}</td>
+          <td>${c.servicos}</td>
+          <td><strong>R$ ${c.total.toFixed(2).replace('.',',')}</strong></td>
+          <td>${ultimoFmt}</td>
+          <td>${situacao}</td>
+          <td><button class="btn-sm secondary" onclick="window.open('https://wa.me/55${wpp}','_blank')">💬 WhatsApp</button></td>
+        </tr>`;
+    });
+  } catch(e) {
+    console.error('Erro ao renderizar clientes:', e);
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px">Erro ao carregar clientes.</td></tr>';
+  }
 }
 // =============================================
 // CUPONS
@@ -1149,12 +1119,12 @@ document.getElementById('filterStatus')?.addEventListener('change', () => {
   renderTabelaOrcamentos(ORCAMENTOS);
 });
 
-document.getElementById('searchCliente')?.addEventListener('input', function() {
-  const termo = this.value.toLowerCase();
-  const filtrados = termo
-    ? ORCAMENTOS.filter(o => (o.nome||'').toLowerCase().includes(termo) || (o.whatsapp||'').includes(termo))
-    : ORCAMENTOS;
-  renderTabelaClientes(filtrados);
+// A busca e o filtro de carteira apenas re-renderizam (a própria função lê os valores)
+document.getElementById('searchCliente')?.addEventListener('input', () => {
+  renderTabelaClientes(ORCAMENTOS);
+});
+document.getElementById('filterCarteira')?.addEventListener('change', () => {
+  renderTabelaClientes(ORCAMENTOS);
 });
 
 // INIT
@@ -1511,6 +1481,158 @@ window.renderAdminCalendar = function() {
       </div>
     `;
   });
+};
+
+// =============================================
+// RELATÓRIOS DE ATENDIMENTOS (só concluídos)
+// =============================================
+let periodoRelatorio = 'semanal';
+let chartRelServicos, chartRelCidades;
+
+window.mudarPeriodoRelatorio = function(periodo) {
+  periodoRelatorio = periodo;
+  document.getElementById('btnRelSemanal').className = periodo === 'semanal' ? 'btn-sm primary' : 'btn-sm secondary';
+  document.getElementById('btnRelMensal').className = periodo === 'mensal' ? 'btn-sm primary' : 'btn-sm secondary';
+  renderRelatorios();
+};
+
+function renderRelatorios() {
+  // Só atendimentos CONCLUÍDOS (serviço realizado de fato)
+  const concluidos = (ORCAMENTOS || []).filter(o => o.status === 'concluido');
+
+  // Filtra pelo período
+  const agora = new Date();
+  let inicio;
+  if (periodoRelatorio === 'semanal') {
+    inicio = new Date(agora); inicio.setDate(agora.getDate() - 7);
+  } else {
+    inicio = new Date(agora); inicio.setMonth(agora.getMonth() - 1);
+  }
+  const doPeriodo = concluidos.filter(o => {
+    const d = o.criadoEm ? new Date(o.criadoEm) : null;
+    return d && d >= inicio && d <= agora;
+  });
+
+  // Label do período
+  const fmtData = (d) => d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' });
+  const lbl = document.getElementById('relPeriodoLabel');
+  if (lbl) lbl.textContent = `${fmtData(inicio)} até ${fmtData(agora)}`;
+
+  // KPIs
+  let faturamento = 0;
+  const clientesSet = new Set();
+  const servicosCount = {};
+  const cidadesCount = {};
+
+  doPeriodo.forEach(o => {
+    const valor = o.valorEstimado || o.valorFinal || calcularOrcamentoCompleto(o).total;
+    faturamento += valor;
+    clientesSet.add(o.whatsapp || o.nome);
+    (o.servicos || []).forEach(s => {
+      const nome = s.tipo === 'sofa' ? 'Sofá' : (s.tipo || 'outro');
+      servicosCount[nome] = (servicosCount[nome] || 0) + 1;
+    });
+    const cidade = o.endereco?.split(' - ')[1]?.split('/')[0] || 'Outra';
+    cidadesCount[cidade] = (cidadesCount[cidade] || 0) + 1;
+  });
+
+  const qtd = doPeriodo.length;
+  const ticket = qtd > 0 ? faturamento / qtd : 0;
+  const fmt = (v) => 'R$ ' + v.toFixed(2).replace('.', ',');
+
+  const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  setTxt('relQtd', qtd);
+  setTxt('relFaturamento', fmt(faturamento));
+  setTxt('relTicket', fmt(ticket));
+  setTxt('relClientes', clientesSet.size);
+
+  // Tabela de atendimentos
+  const tbody = document.getElementById('tabelaRelatorio');
+  if (tbody) {
+    if (doPeriodo.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-mid);padding:40px">Nenhum atendimento concluído neste período.</td></tr>';
+    } else {
+      tbody.innerHTML = '';
+      doPeriodo.sort((a,b) => (b.criadoEm||0)-(a.criadoEm||0)).forEach(o => {
+        const data = o.criadoEm ? new Date(o.criadoEm).toLocaleDateString('pt-BR') : '—';
+        const servicos = (o.servicos || []).map(s => s.tipo === 'sofa' ? `Sofá (${s.pessoas||'?'}p)` : s.tipo).join(', ');
+        const cidade = o.endereco?.split(' - ')[1]?.split('/')[0] || '—';
+        const valor = o.valorEstimado || o.valorFinal || calcularOrcamentoCompleto(o).total;
+        tbody.innerHTML += `
+          <tr>
+            <td><strong>${o.numero||'—'}</strong></td>
+            <td>${data}</td>
+            <td>${o.nome||'—'}</td>
+            <td style="font-size:0.82rem">${servicos}</td>
+            <td>${cidade}</td>
+            <td><strong>${fmt(valor)}</strong></td>
+          </tr>`;
+      });
+    }
+  }
+
+  // Gráficos
+  renderChartRelatorio(servicosCount, cidadesCount);
+}
+
+function renderChartRelatorio(servicosCount, cidadesCount) {
+  if (typeof Chart === 'undefined') return;
+
+  const servCanvas = document.getElementById('chartRelServicos');
+  if (servCanvas) {
+    if (chartRelServicos) chartRelServicos.destroy();
+    const labels = Object.keys(servicosCount);
+    chartRelServicos = new Chart(servCanvas, {
+      type: 'bar',
+      data: {
+        labels: labels.length ? labels : ['Sem dados'],
+        datasets: [{ data: labels.length ? Object.values(servicosCount) : [0], backgroundColor: '#2A3FB5', borderRadius: 6 }]
+      },
+      options: { plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}, responsive:true, maintainAspectRatio:false }
+    });
+  }
+
+  const cidCanvas = document.getElementById('chartRelCidades');
+  if (cidCanvas) {
+    if (chartRelCidades) chartRelCidades.destroy();
+    const labels = Object.keys(cidadesCount);
+    chartRelCidades = new Chart(cidCanvas, {
+      type: 'doughnut',
+      data: {
+        labels: labels.length ? labels : ['Sem dados'],
+        datasets: [{ data: labels.length ? Object.values(cidadesCount) : [1], backgroundColor: ['#2A3FB5','#E8521A','#22c55e','#f59e0b','#8b5cf6','#06b6d4'] }]
+      },
+      options: { plugins:{legend:{position:'bottom'}}, responsive:true, maintainAspectRatio:false }
+    });
+  }
+}
+
+window.exportarRelatorioAtendimentos = function() {
+  const concluidos = (ORCAMENTOS || []).filter(o => o.status === 'concluido');
+  const agora = new Date();
+  let inicio = new Date(agora);
+  if (periodoRelatorio === 'semanal') inicio.setDate(agora.getDate() - 7);
+  else inicio.setMonth(agora.getMonth() - 1);
+  const dados = concluidos.filter(o => {
+    const d = o.criadoEm ? new Date(o.criadoEm) : null;
+    return d && d >= inicio;
+  });
+
+  let csv = 'Numero,Data,Cliente,WhatsApp,Servicos,Cidade,Valor\n';
+  dados.forEach(o => {
+    const data = o.criadoEm ? new Date(o.criadoEm).toLocaleDateString('pt-BR') : '';
+    const servicos = (o.servicos||[]).map(s => s.tipo).join(' + ');
+    const cidade = o.endereco?.split(' - ')[1]?.split('/')[0] || '';
+    const valor = o.valorEstimado || o.valorFinal || 0;
+    csv += `${o.numero||''},${data},"${o.nome||''}",${o.whatsapp||''},"${servicos}",${cidade},${valor.toFixed(2)}\n`;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `relatorio_${periodoRelatorio}_${agora.toISOString().split('T')[0]}.csv`;
+  link.click();
+  toast('Relatório exportado! ✓', 'success');
 };
 
 // Aliasing para compatibilidade
