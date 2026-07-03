@@ -1271,6 +1271,7 @@ function iniciarEscutaTempoReal() {
     renderDashboardComDados(ORCAMENTOS);
     if (paginaAtual === 'orcamentos') renderTabelaOrcamentos(ORCAMENTOS);
     if (paginaAtual === 'clientes') renderTabelaClientes(ORCAMENTOS);
+    if (paginaAtual === 'agenda') renderAdminCalendar();
 
     // Verificação de carga inicial para tocar se houver pendências
     if (qtdOrcamentosConhecida === null) {
@@ -1415,8 +1416,27 @@ window.renderAdminCalendar = function() {
   const agendaContainer = document.getElementById('page-agenda');
   if (!agendaContainer) return;
 
-  // Lê da lista real de AGENDAMENTOS (nó 'agendamentos' do banco)
-  const lista = (AGENDAMENTOS || []).slice();
+  // === FONTE 1: agendamentos reais (cliente escolheu dia/hora) ===
+  const agendamentosReais = (AGENDAMENTOS || []).slice();
+  const numerosComAgendamento = new Set(agendamentosReais.map(a => a.numero));
+
+  // === FONTE 2: orçamentos confirmados manualmente SEM agendamento real ===
+  const confirmadosManuais = (ORCAMENTOS || [])
+    .filter(o => o.status === 'confirmado' && !numerosComAgendamento.has(o.numero))
+    .map(o => ({
+      numero: o.numero,
+      cliente: o.nome,
+      whatsapp: o.whatsapp,
+      endereco: o.endereco,
+      servicos: o.servicos || [],
+      valor: o.valorEstimado || o.valorFinal || 0,
+      data: o.dataAgendada || null,
+      hora: o.horaAgendada || null,
+      semAgendamento: !o.dataAgendada  // marca que foi confirmado na mão, sem dia/hora
+    }));
+
+  // Combina as duas fontes
+  const lista = [...agendamentosReais, ...confirmadosManuais];
 
   // Estrutura do container
   let agendaListaHtml = agendaContainer.querySelector('.agenda-lista-records');
@@ -1437,8 +1457,11 @@ window.renderAdminCalendar = function() {
     return;
   }
 
-  // Ordena por data + hora (mais próximos primeiro)
+  // Ordena: primeiro os com data definida (por data), depois os "a definir"
   lista.sort((a, b) => {
+    if (!a.data && b.data) return 1;
+    if (a.data && !b.data) return -1;
+    if (!a.data && !b.data) return 0;
     const da = new Date(`${a.data}T${(a.hora||'00:00')}`);
     const db = new Date(`${b.data}T${(b.hora||'00:00')}`);
     return da - db;
@@ -1446,22 +1469,25 @@ window.renderAdminCalendar = function() {
 
   agendaListaHtml.innerHTML = '';
   lista.forEach(ag => {
-    // Data amigável DD/MM/AAAA
-    let dataFmt = ag.dataFmt || 'Sem data';
+    const semAg = ag.semAgendamento || !ag.data;
+    // Data amigável
+    let dataFmt = ag.dataFmt || (semAg ? 'A definir' : 'Sem data');
     if (ag.data && !ag.dataFmt) {
       const p = ag.data.split('-');
       if (p.length === 3) dataFmt = `${p[2]}/${p[1]}/${p[0]}`;
     }
-    const horario = ag.hora || '—';
+    const horario = ag.hora || (semAg ? 'Aguardando cliente' : '—');
     const servicos = (ag.servicos || []).map(s => {
       if (s.tipo === 'sofa') return `• Sofá (${s.pessoas || '?'} pessoas)`;
       return `• ${s.tipo} ${s.subtipo ? '('+s.subtipo+')' : ''}`;
     }).join('<br>') || '—';
     const valor = ag.valor || 0;
     const wpp = (ag.whatsapp || '').replace(/\D/g,'');
+    const corBorda = semAg ? '#f59e0b' : '#22c55e';   // laranja se "a definir", verde se agendado
+    const corData = semAg ? '#f59e0b' : '#22c55e';
 
     agendaListaHtml.innerHTML += `
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding:16px; background:var(--card-bg); border-left:5px solid #22c55e; border-radius:8px; box-shadow:var(--shadow);">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding:16px; background:var(--card-bg); border-left:5px solid ${corBorda}; border-radius:8px; box-shadow:var(--shadow);">
         <div style="flex:1">
           <div style="font-size:1.05rem; font-weight:700; color:var(--text); margin-bottom:4px;">
             ${ag.cliente || 'Cliente'} <span style="font-size:0.82rem; font-weight:400; color:var(--text-mid);">(${ag.numero || 'S/N'})</span>
@@ -1475,9 +1501,10 @@ window.renderAdminCalendar = function() {
           <div style="font-size:0.82rem; color:var(--text-mid); margin-top:6px;">
             📍 ${ag.endereco || 'Não informado'}
           </div>
+          ${semAg ? '<div style="font-size:0.78rem; color:#f59e0b; margin-top:6px; font-weight:600;">⚠️ Confirmado manualmente — cliente ainda não escolheu dia/hora</div>' : ''}
         </div>
         <div style="text-align:right; min-width:130px;">
-          <div style="font-size:1.1rem; font-weight:800; color:#22c55e; margin-bottom:2px;">${dataFmt}</div>
+          <div style="font-size:1.1rem; font-weight:800; color:${corData}; margin-bottom:2px;">${dataFmt}</div>
           <div style="font-size:0.95rem; font-weight:600; color:var(--text); margin-bottom:8px;">⏰ ${horario}</div>
           <div style="font-size:0.95rem; font-weight:700; color:var(--text);">R$ ${valor.toFixed(2).replace('.', ',')}</div>
         </div>
