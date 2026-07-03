@@ -1476,7 +1476,10 @@ window.renderAdminCalendar = function() {
         <div style="text-align:right; min-width:130px;">
           <div style="font-size:1.1rem; font-weight:800; color:${corData}; margin-bottom:2px;">${dataFmt}</div>
           <div style="font-size:0.95rem; font-weight:600; color:var(--text); margin-bottom:8px;">⏰ ${horario}</div>
-          <div style="font-size:0.95rem; font-weight:700; color:var(--text);">R$ ${valor.toFixed(2).replace('.', ',')}</div>
+          <div style="font-size:0.95rem; font-weight:700; color:var(--text); margin-bottom:10px;">R$ ${valor.toFixed(2).replace('.', ',')}</div>
+          <button class="btn-sm ${semAg ? 'orange' : 'secondary'}" onclick="abrirDefinirDataHora('${ag.numero || ''}')" style="white-space:nowrap;font-size:0.78rem">
+            ${semAg ? '📅 Definir data/hora' : '✏️ Alterar'}
+          </button>
         </div>
       </div>
     `;
@@ -1637,3 +1640,114 @@ window.exportarRelatorioAtendimentos = function() {
 
 // Aliasing para compatibilidade
 window.carregarAgenda = window.renderAdminCalendar;
+
+// =============================================
+// DEFINIR DATA/HORA MANUALMENTE (para agendamentos confirmados na mão)
+// =============================================
+window.abrirDefinirDataHora = function(numero) {
+  if (!numero) { toast('Orçamento sem número identificado.', 'error'); return; }
+
+  // Encontra o orçamento pelo número
+  const orc = (ORCAMENTOS || []).find(o => o.numero === numero);
+  if (!orc) { toast('Orçamento não encontrado.', 'error'); return; }
+
+  // Cria o modal dinamicamente
+  const hoje = new Date().toISOString().split('T')[0];
+  const horarios = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
+  const modalHtml = `
+    <div class="modal-overlay open" id="modalDataHora" onclick="if(event.target===this)fecharDefinirDataHora()">
+      <div class="modal" style="max-width:400px;text-align:left">
+        <h3 style="margin-bottom:4px">📅 Definir Data e Hora</h3>
+        <p style="font-size:0.85rem;color:var(--text-mid);margin-bottom:20px">Cliente: <strong>${orc.nome}</strong> (${numero})</p>
+        <div class="settings-field" style="margin-bottom:16px">
+          <label>Data do atendimento</label>
+          <input type="date" id="inputDataManual" min="${hoje}" value="${orc.dataAgendada || hoje}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)" />
+        </div>
+        <div class="settings-field" style="margin-bottom:20px">
+          <label>Horário</label>
+          <select id="inputHoraManual" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+            ${horarios.map(h => `<option value="${h}" ${orc.horaAgendada===h?'selected':''}>${h}</option>`).join('')}
+          </select>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn-sm primary" onclick="salvarDataHoraManual('${numero}')" style="flex:1">✓ Confirmar</button>
+          <button class="btn-sm secondary" onclick="fecharDefinirDataHora()">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+
+  const div = document.createElement('div');
+  div.id = 'wrapperDataHora';
+  div.innerHTML = modalHtml;
+  document.body.appendChild(div);
+};
+
+window.fecharDefinirDataHora = function() {
+  const w = document.getElementById('wrapperDataHora');
+  if (w) w.remove();
+};
+
+window.salvarDataHoraManual = async function(numero) {
+  const data = document.getElementById('inputDataManual')?.value;
+  const hora = document.getElementById('inputHoraManual')?.value;
+  if (!data || !hora) { toast('Escolha data e horário.', 'error'); return; }
+
+  const orc = (ORCAMENTOS || []).find(o => o.numero === numero);
+  if (!orc || !orc.id) { toast('Orçamento não encontrado.', 'error'); return; }
+
+  try {
+    const { ref, runTransaction, update, get } = window._rtdb;
+    const horaKey = hora.replace(':', 'h');
+
+    // Verifica se o horário está livre (trava anti-duplicação)
+    const slotRef = ref(window._db, `slots/${data}/${horaKey}`);
+    const resultado = await runTransaction(slotRef, (atual) => {
+      if (atual) return; // ocupado -> aborta
+      return { ocupado: true, numero: numero, cliente: orc.nome, criadoEm: Date.now(), manual: true };
+    });
+
+    if (!resultado.committed) {
+      toast('Esse horário já está ocupado. Escolha outro.', 'error');
+      return;
+    }
+
+    // Libera o slot antigo, se havia
+    if (orc.dataAgendada && orc.horaAgendada) {
+      const oldKey = orc.horaAgendada.replace(':', 'h');
+      try { await update(ref(window._db, `slots/${orc.dataAgendada}`), { [oldKey]: null }); } catch(e) {}
+    }
+
+    // Atualiza o orçamento
+    await update(ref(window._db, `orcamentos/${orc.id}`), {
+      status: 'confirmado',
+      dataAgendada: data,
+      horaAgendada: hora
+    });
+
+    // Cria/atualiza registro na tabela de agendamentos (para aparecer com data na agenda)
+    const dataObj = new Date(`${data}T${hora}`);
+    const dataFmt = dataObj.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
+    await update(ref(window._db, `agendamentos/manual_${orc.id}`), {
+      orcamentoId: orc.id,
+      numero: numero,
+      cliente: orc.nome,
+      whatsapp: orc.whatsapp || '',
+      endereco: orc.endereco || '',
+      servicos: orc.servicos || [],
+      valor: orc.valorEstimado || orc.valorFinal || 0,
+      data: data,
+      dataFmt: dataFmt,
+      hora: hora,
+      status: 'confirmado',
+      manual: true,
+      criadoEm: Date.now()
+    });
+
+    toast('Data e hora definidas! ✓', 'success');
+    fecharDefinirDataHora();
+    // A agenda atualiza sozinha pela escuta
+  } catch(e) {
+    console.error('Erro ao definir data/hora:', e);
+    toast('Erro ao salvar. Tente novamente.', 'error');
+  }
+};
