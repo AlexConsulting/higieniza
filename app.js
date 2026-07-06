@@ -2,6 +2,26 @@
 // HIGIENIZA AÍ — app.js
 // =============================================
 
+// Padroniza texto em Title Case (Ex: "juliana DA silva" -> "Juliana da Silva")
+function titleCase(texto) {
+  if (!texto || typeof texto !== 'string') return texto || '';
+  const minusculas = ['de','da','do','das','dos','e','a','o','em','no','na','com'];
+  const maiusculas = ['sp','rj','mg','df','ba','pr','sc','rs','go','pe','ce','pa','am'];
+  return texto.toLowerCase().split(' ').map((palavra, i) => {
+    if (!palavra) return palavra;
+    if (palavra.includes('/')) {
+      return palavra.split('/').map(parte =>
+        maiusculas.includes(parte) ? parte.toUpperCase() : (parte.charAt(0).toUpperCase() + parte.slice(1))
+      ).join('/');
+    }
+    if (palavra === 'nº' || palavra === 'n°') return palavra;
+    if (/\d/.test(palavra) && palavra.length <= 4) return palavra;
+    if (maiusculas.includes(palavra)) return palavra.toUpperCase();
+    if (i > 0 && minusculas.includes(palavra)) return palavra;
+    return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+  }).join(' ');
+}
+
 // =============================================
 // TABELA DE PREÇOS-BASE (espelha as Configurações do painel)
 // Se mudar um preço no painel admin, atualize aqui também.
@@ -384,16 +404,16 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
   });
 
   // Montar endereço completo com número e complemento
-  const enderecoBase = document.getElementById('endereco').value.trim();
+  const enderecoBase = titleCase(document.getElementById('endereco').value.trim());
   const numEndereco = document.getElementById('numero')?.value.trim() || '';
-  const complemento = document.getElementById('complemento')?.value.trim() || '';
+  const complemento = titleCase(document.getElementById('complemento')?.value.trim() || '');
   let enderecoCompleto = enderecoBase;
   if (numEndereco) enderecoCompleto += `, nº ${numEndereco}`;
   if (complemento) enderecoCompleto += ` (${complemento})`;
 
   const valorEstimado = calcularEstimativa(servicos);
   const pedido = {
-    nome: document.getElementById('nome').value.trim(),
+    nome: titleCase(document.getElementById('nome').value.trim()),
     whatsapp: document.getElementById('whatsapp').value.trim(),
     cep: document.getElementById('cep').value.replace(/\D/g,''),
     endereco: enderecoCompleto,
