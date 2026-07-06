@@ -624,6 +624,12 @@ window.abrirEditarPedido = function() {
           </div>
         </div>
 
+        <div class="settings-field" style="margin-bottom:16px">
+          <label>⏱️ Duração do serviço (minutos)</label>
+          <input type="number" id="editDuracaoMin" min="30" step="15" value="${d.duracaoMin || 60}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)" />
+          <span style="font-size:0.75rem;color:var(--text-mid)">Se adicionou serviços, ajuste o tempo. A agenda re-bloqueia os horários necessários ao salvar.</span>
+        </div>
+
         <div style="display:flex;gap:10px">
           <button class="btn-sm primary" onclick="salvarEdicaoPedido()" style="flex:1">✓ Salvar alterações</button>
           <button class="btn-sm secondary" onclick="fecharEditarPedido()">Cancelar</button>
@@ -673,10 +679,12 @@ window.removerServicoPedido = function(i) {
 };
 
 function reabrirEdicao() {
-  // Guarda os serviços editados temporariamente e reabre o modal atualizado
+  // Guarda os serviços editados E a duração digitada antes de reabrir
   const editados = window._servicosEditaveis;
+  const duracaoDigitada = document.getElementById('editDuracaoMin')?.value;
   fecharEditarPedido();
   orcamentoAtual.servicos = editados;
+  if (duracaoDigitada) orcamentoAtual.duracaoMin = parseInt(duracaoDigitada);
   abrirEditarPedido();
 }
 
@@ -694,21 +702,77 @@ function recalcularValorEdicao() {
 window.salvarEdicaoPedido = async function() {
   if (!orcamentoIdAtual) return;
   recalcularValorEdicao();
+  const novaDuracao = parseInt(document.getElementById('editDuracaoMin')?.value) || 60;
+  const d = orcamentoAtual;
+
   try {
-    const { ref, update } = window._rtdb;
-    await update(ref(window._db, `orcamentos/${orcamentoIdAtual}`), {
-      servicos: window._servicosEditaveis,
-      valorFinal: window._novoValorPedido
-    });
-    // Se houver agendamento vinculado, atualiza os serviços e valor lá também
-    const agId = `manual_${orcamentoIdAtual}`;
-    try {
-      await update(ref(window._db, `agendamentos/${agId}`), {
-        servicos: window._servicosEditaveis,
-        valor: window._novoValorPedido
+    const { ref, update, get } = window._rtdb;
+
+    // Se o pedido JÁ tem data/hora agendada, precisa reajustar os slots conforme a nova duração
+    if (d.dataAgendada && d.horaAgendada) {
+      const novosSlots = slotsOcupadosPor(d.horaAgendada, novaDuracao);
+
+      // Libera os slots antigos deste agendamento
+      const slotsAntigos = d.slotsOcupados || [d.horaAgendada];
+      const libera = {};
+      slotsAntigos.forEach(s => { libera[horaParaChave(s)] = null; });
+      try { await update(ref(window._db, `slots/${d.dataAgendada}`), libera); } catch(e) {}
+
+      // Verifica conflito com outros agendamentos nos novos slots
+      const snapSlots = await get(ref(window._db, `slots/${d.dataAgendada}`));
+      const ocupadosAtuais = snapSlots.exists() ? snapSlots.val() : {};
+      const conflitantes = novosSlots.filter(s => ocupadosAtuais[horaParaChave(s)]);
+      if (conflitantes.length > 0) {
+        toast(`⚠️ Atenção: a nova duração invade os horários ${conflitantes.join(', ')} que já estão ocupados. Reduza a duração ou remarque na agenda.`, 'error');
+        // Re-bloqueia os slots antigos (rollback) para não deixar buraco
+        const rollback = {};
+        slotsAntigos.forEach(s => {
+          rollback[horaParaChave(s)] = { ocupado: true, numero: d.numero, cliente: d.nome, criadoEm: Date.now(), manual: true };
+        });
+        await update(ref(window._db, `slots/${d.dataAgendada}`), rollback);
+        return;
+      }
+
+      // Bloqueia os novos slots
+      const bloqueio = {};
+      novosSlots.forEach(s => {
+        bloqueio[horaParaChave(s)] = { ocupado: true, numero: d.numero, cliente: d.nome, criadoEm: Date.now(), manual: true };
       });
-    } catch(e) {}
-    toast('Pedido atualizado! Valor e financeiro ajustados. ✓', 'success');
+      await update(ref(window._db, `slots/${d.dataAgendada}`), bloqueio);
+
+      // Atualiza o registro de agendamento com os novos slots e duração
+      const agId = `manual_${orcamentoIdAtual}`;
+      try {
+        await update(ref(window._db, `agendamentos/${agId}`), {
+          servicos: window._servicosEditaveis,
+          valor: window._novoValorPedido,
+          duracaoMin: novaDuracao
+        });
+      } catch(e) {}
+    } else {
+      // Sem data ainda: só atualiza serviços/valor do agendamento (se existir)
+      const agId = `manual_${orcamentoIdAtual}`;
+      try {
+        await update(ref(window._db, `agendamentos/${agId}`), {
+          servicos: window._servicosEditaveis,
+          valor: window._novoValorPedido,
+          duracaoMin: novaDuracao
+        });
+      } catch(e) {}
+    }
+
+    // Atualiza o orçamento (serviços, valor e duração/slots)
+    const updates = {
+      servicos: window._servicosEditaveis,
+      valorFinal: window._novoValorPedido,
+      duracaoMin: novaDuracao
+    };
+    if (d.dataAgendada && d.horaAgendada) {
+      updates.slotsOcupados = slotsOcupadosPor(d.horaAgendada, novaDuracao);
+    }
+    await update(ref(window._db, `orcamentos/${orcamentoIdAtual}`), updates);
+
+    toast('Pedido atualizado! Valor, financeiro e agenda ajustados. ✓', 'success');
     fecharEditarPedido();
     fecharModalOrc();
   } catch(e) {
