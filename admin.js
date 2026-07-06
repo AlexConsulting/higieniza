@@ -595,8 +595,8 @@ window.abrirEditarPedido = function() {
   }).join('') || '<p style="color:var(--text-mid);font-size:0.85rem;padding:8px">Nenhum serviço.</p>';
 
   const modalHtml = `
-    <div class="modal-overlay open" id="modalEditarPedido" onclick="if(event.target===this)fecharEditarPedido()">
-      <div class="modal" style="max-width:480px;text-align:left">
+    <div id="modalEditarPedido" onclick="if(event.target===this)fecharEditarPedido()" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto">
+      <div style="max-width:480px;width:100%;background:var(--card-bg,#fff);border-radius:16px;padding:28px;text-align:left;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.4)">
         <h3 style="margin-bottom:4px">✏️ Editar Pedido</h3>
         <p style="font-size:0.85rem;color:var(--text-mid);margin-bottom:16px">${titleCase(d.nome)} (${d.numero})</p>
 
