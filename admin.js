@@ -3,6 +3,27 @@
 // =============================================
 console.log('✅ [LOG] admin.js versão COM LOGS carregado —', new Date().toLocaleTimeString());
 
+// Padroniza texto em Title Case (Ex: "juliana DA silva" -> "Juliana da Silva")
+function titleCase(texto) {
+  if (!texto || typeof texto !== 'string') return texto || '';
+  const minusculas = ['de','da','do','das','dos','e','a','o','em','no','na','com'];
+  const maiusculas = ['sp','rj','mg','df','ba','pr','sc','rs','go','pe','ce','pa','am'];
+  return texto.toLowerCase().split(' ').map((palavra, i) => {
+    if (!palavra) return palavra;
+    if (palavra.includes('/')) {
+      return palavra.split('/').map(parte =>
+        maiusculas.includes(parte) ? parte.toUpperCase() : (parte.charAt(0).toUpperCase() + parte.slice(1))
+      ).join('/');
+    }
+    if (palavra === 'nº' || palavra === 'n°') return palavra;
+    if (/\d/.test(palavra) && palavra.length <= 4) return palavra;
+    if (maiusculas.includes(palavra)) return palavra.toUpperCase();
+    if (i > 0 && minusculas.includes(palavra)) return palavra;
+    return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+  }).join(' ');
+}
+window.titleCase = titleCase;
+
 // THEME
 const html = document.documentElement;
 const saved = localStorage.getItem('theme') || 'light';
@@ -422,7 +443,7 @@ function renderTabelaOrcamentos(docs) {
       <tr>
         <td><strong>${d.numero || '—'}</strong></td>
         <td>${data}</td>
-        <td>${d.nome}</td>
+        <td>${titleCase(d.nome)}</td>
         <td style="font-size:0.8rem">${servicos}</td>
         <td>${cidadeLabel}</td>
         <td><strong>R$ ${(d.valorFinal || calc.total).toFixed(2).replace('.',',')}</strong></td>
@@ -459,9 +480,9 @@ window.abrirOrcamento = async function(id) {
     const calc = calcularOrcamentoCompleto(d);
 
     document.getElementById('modalOrcNumero').textContent = `Orçamento ${d.numero || ''}`;
-    document.getElementById('oNome').textContent = d.nome;
+    document.getElementById('oNome').textContent = titleCase(d.nome);
     document.getElementById('oWhats').textContent = d.whatsapp;
-    document.getElementById('oEndereco').textContent = d.endereco || '—';
+    document.getElementById('oEndereco').textContent = titleCase(d.endereco) || '—';
     document.getElementById('oCep').textContent = d.cep || '—';
     document.getElementById('oDistancia').textContent = `≈ ${calc.distancia.toFixed(1)} km`;
     document.getElementById('oCidade').textContent = calc.cidade === 'santoandre' ? 'Santo André (+5%)' : calc.cidade === 'saocaetano' ? 'São Caetano do Sul (+10%)' : 'Outras';
@@ -525,7 +546,7 @@ window.aprovarEEnviar = async function() {
     const linkAgendar = `${window.location.origin}/higieniza/agendar.html?id=${orcamentoIdAtual}`;
 
     const msg = encodeURIComponent(
-      `Olá, *${d.nome}*! 😊\n\n` +
+      `Olá, *${titleCase(d.nome)}*! 😊\n\n` +
       `Segue o orçamento *${d.numero}* da *Higieniza Aí — Lavagem a Seco*:\n\n` +
       `📋 *Serviços:*\n${servicos}\n\n` +
       `💰 *Valor Total: R$ ${valorFinal.toFixed(2).replace('.',',')}*\n\n` +
@@ -1209,7 +1230,7 @@ function renderTabelaClientes(docsEntrada) {
         : '<span class="status-badge confirmado">🟢 Agendado</span>';
       tbody.innerHTML += `
         <tr>
-          <td><strong>${c.nome}</strong></td>
+          <td><strong>${titleCase(c.nome)}</strong></td>
           <td>${c.whatsapp||'—'}</td>
           <td>${c.cidade}</td>
           <td>${c.servicos}</td>
@@ -1715,7 +1736,7 @@ window.renderAdminCalendar = function() {
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding:16px; background:var(--card-bg); border-left:5px solid ${corBorda}; border-radius:8px; box-shadow:var(--shadow);">
         <div style="flex:1">
           <div style="font-size:1.05rem; font-weight:700; color:var(--text); margin-bottom:4px;">
-            ${ag.cliente || 'Cliente'} <span style="font-size:0.82rem; font-weight:400; color:var(--text-mid);">(${ag.numero || 'S/N'})</span>
+            ${titleCase(ag.cliente) || 'Cliente'} <span style="font-size:0.82rem; font-weight:400; color:var(--text-mid);">(${ag.numero || 'S/N'})</span>
           </div>
           <div style="font-size:0.88rem; color:var(--text-mid); margin-bottom:6px;">
             📞 <a href="https://wa.me/55${wpp}" target="_blank" style="color:var(--blue); text-decoration:underline;">${ag.whatsapp || '—'}</a>
@@ -1724,7 +1745,7 @@ window.renderAdminCalendar = function() {
             ${servicos}
           </div>
           <div style="font-size:0.82rem; color:var(--text-mid); margin-top:6px;">
-            📍 ${ag.endereco || 'Não informado'}
+            📍 ${titleCase(ag.endereco) || 'Não informado'}
           </div>
           ${semAg ? '<div style="font-size:0.78rem; color:#f59e0b; margin-top:6px; font-weight:600;">⚠️ Confirmado manualmente — cliente ainda não escolheu dia/hora</div>' : ''}
         </div>
@@ -1745,36 +1766,60 @@ window.renderAdminCalendar = function() {
 // RELATÓRIOS DE ATENDIMENTOS (só concluídos)
 // =============================================
 let periodoRelatorio = 'semanal';
+let periodoCustom = { inicio: null, fim: null };
 let chartRelServicos, chartRelCidades;
 
 window.mudarPeriodoRelatorio = function(periodo) {
   periodoRelatorio = periodo;
+  periodoCustom = { inicio: null, fim: null };
   document.getElementById('btnRelSemanal').className = periodo === 'semanal' ? 'btn-sm primary' : 'btn-sm secondary';
   document.getElementById('btnRelMensal').className = periodo === 'mensal' ? 'btn-sm primary' : 'btn-sm secondary';
   renderRelatorios();
+};
+
+window.aplicarPeriodoPersonalizado = function() {
+  const inicio = document.getElementById('relDataInicio')?.value;
+  const fim = document.getElementById('relDataFim')?.value;
+  if (!inicio || !fim) { toast('Escolha as duas datas (início e fim).', 'error'); return; }
+  if (inicio > fim) { toast('A data de início não pode ser maior que a data fim.', 'error'); return; }
+  periodoCustom = { inicio, fim };
+  periodoRelatorio = 'personalizado';
+  document.getElementById('btnRelSemanal').className = 'btn-sm secondary';
+  document.getElementById('btnRelMensal').className = 'btn-sm secondary';
+  renderRelatorios();
+  toast('Período aplicado! ✓', 'success');
+};
+
+window.limparPeriodoPersonalizado = function() {
+  const di = document.getElementById('relDataInicio'); if (di) di.value = '';
+  const df = document.getElementById('relDataFim'); if (df) df.value = '';
+  mudarPeriodoRelatorio('semanal');
 };
 
 function renderRelatorios() {
   // Só atendimentos CONCLUÍDOS (serviço realizado de fato)
   const concluidos = (ORCAMENTOS || []).filter(o => o.status === 'concluido');
 
-  // Filtra pelo período
+  // Determina o período
   const agora = new Date();
-  let inicio;
-  if (periodoRelatorio === 'semanal') {
+  let inicio, fim = agora;
+  if (periodoRelatorio === 'personalizado' && periodoCustom.inicio && periodoCustom.fim) {
+    inicio = new Date(periodoCustom.inicio + 'T00:00:00');
+    fim = new Date(periodoCustom.fim + 'T23:59:59');
+  } else if (periodoRelatorio === 'semanal') {
     inicio = new Date(agora); inicio.setDate(agora.getDate() - 7);
   } else {
     inicio = new Date(agora); inicio.setMonth(agora.getMonth() - 1);
   }
   const doPeriodo = concluidos.filter(o => {
     const d = o.criadoEm ? new Date(o.criadoEm) : null;
-    return d && d >= inicio && d <= agora;
+    return d && d >= inicio && d <= fim;
   });
 
   // Label do período
-  const fmtData = (d) => d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' });
+  const fmtData = (d) => d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
   const lbl = document.getElementById('relPeriodoLabel');
-  if (lbl) lbl.textContent = `${fmtData(inicio)} até ${fmtData(agora)}`;
+  if (lbl) lbl.textContent = `${fmtData(inicio)} até ${fmtData(fim)}`;
 
   // KPIs
   let faturamento = 0;
@@ -1868,12 +1913,18 @@ function renderChartRelatorio(servicosCount, cidadesCount) {
 window.exportarRelatorioAtendimentos = function() {
   const concluidos = (ORCAMENTOS || []).filter(o => o.status === 'concluido');
   const agora = new Date();
-  let inicio = new Date(agora);
-  if (periodoRelatorio === 'semanal') inicio.setDate(agora.getDate() - 7);
-  else inicio.setMonth(agora.getMonth() - 1);
+  let inicio, fim = agora;
+  if (periodoRelatorio === 'personalizado' && periodoCustom.inicio && periodoCustom.fim) {
+    inicio = new Date(periodoCustom.inicio + 'T00:00:00');
+    fim = new Date(periodoCustom.fim + 'T23:59:59');
+  } else if (periodoRelatorio === 'semanal') {
+    inicio = new Date(agora); inicio.setDate(agora.getDate() - 7);
+  } else {
+    inicio = new Date(agora); inicio.setMonth(agora.getMonth() - 1);
+  }
   const dados = concluidos.filter(o => {
     const d = o.criadoEm ? new Date(o.criadoEm) : null;
-    return d && d >= inicio;
+    return d && d >= inicio && d <= fim;
   });
 
   let csv = 'Numero,Data,Cliente,WhatsApp,Servicos,Cidade,Valor\n';
