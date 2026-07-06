@@ -28,6 +28,37 @@ if (window.innerWidth <= 768) {
   document.getElementById('sidebarToggle').style.display = 'flex';
 }
 
+// =============================================
+// DURAÇÃO / SLOTS DE AGENDA
+// =============================================
+const HORARIOS_AGENDA = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
+const SLOT_MINUTOS = 60; // cada slot representa 1h
+
+// Minutos de deslocamento entre atendimentos (lê da config, padrão 30)
+function getDeslocamentoMin() {
+  const cfg = getConfig();
+  return (cfg && cfg.deslocamento_min != null) ? cfg.deslocamento_min : 30;
+}
+
+// Dada uma hora inicial (ex "09:00") e uma duração em minutos, retorna
+// a lista de slots (horas cheias) que ficam ocupados, arredondando para cima.
+function slotsOcupadosPor(horaInicial, duracaoMin) {
+  const desloc = getDeslocamentoMin();
+  const totalMin = (duracaoMin || 60) + desloc;
+  // Arredonda para cima em blocos de 60 min (slot cheio)
+  const qtdSlots = Math.ceil(totalMin / SLOT_MINUTOS);
+  const idx = HORARIOS_AGENDA.indexOf(horaInicial);
+  if (idx === -1) return [horaInicial];
+  const slots = [];
+  for (let i = 0; i < qtdSlots && (idx + i) < HORARIOS_AGENDA.length; i++) {
+    slots.push(HORARIOS_AGENDA[idx + i]);
+  }
+  return slots;
+}
+
+// Converte "09:00" -> "09h00" (chave de slot no banco)
+function horaParaChave(h) { return h.replace(':', 'h'); }
+
 // NAVEGAÇÃO
 let paginaAtual = 'dashboard';
 document.querySelectorAll('[data-page]').forEach(link => {
@@ -93,6 +124,7 @@ function getConfig() {
       adicional_10km: 5, adicional_30km: 10, adicional_31km: 15
     },
     cidades: { santoandre: 5, saocaetano: 10, outras: 0 },
+    deslocamento_min: 30,
     geral: {
       meta_mensal: 5000,
       admin_whats: '5511992067073',
@@ -135,7 +167,9 @@ function carregarConfiguracoes() {
   const el_aw = document.getElementById('admin_whats'); if (el_aw) el_aw.value = cfg.geral.admin_whats;
   const el_ew = document.getElementById('empresa_whats'); if (el_ew) el_ew.value = cfg.geral.empresa_whats;
   const el_sc2 = document.getElementById('sede_cep'); if (el_sc2) el_sc2.value = cfg.geral.sede_cep;
-  const el_ho = document.getElementById('horarios_disponiveis'); if (el_ho) el_ho.value = cfg.geral.horarios;
+  const el_dm = document.getElementById('deslocamento_min'); if (el_dm) el_dm.value = cfg.deslocamento_min != null ? cfg.deslocamento_min : 30;
+  // Carrega o status da trava de agenda
+  carregarStatusTrava();
 }
 
 window.salvarPrecos = function(grupo) {
@@ -177,9 +211,65 @@ window.salvarGeral = function() {
   cfg.geral.admin_whats = document.getElementById('admin_whats')?.value || '';
   cfg.geral.empresa_whats = document.getElementById('empresa_whats')?.value || '';
   cfg.geral.sede_cep = document.getElementById('sede_cep')?.value || '';
-  cfg.geral.horarios = document.getElementById('horarios_disponiveis')?.value || '';
+  cfg.deslocamento_min = parseInt(document.getElementById('deslocamento_min')?.value) || 30;
   saveConfig(cfg);
+
+  // Salva o deslocamento também no Firebase (para o cliente ler ao agendar)
+  try {
+    const { ref, update } = window._rtdb;
+    update(ref(window._db, 'config'), { deslocamento_min: cfg.deslocamento_min });
+  } catch(e) { console.warn('Não salvou deslocamento no Firebase:', e.message); }
+
   toast('Configurações gerais salvas! ✓', 'success');
+};
+
+// =============================================
+// TRAVA DE AGENDA
+// =============================================
+async function carregarStatusTrava() {
+  const el = document.getElementById('travaStatus');
+  if (!el) return;
+  try {
+    const { ref, get } = window._rtdb;
+    const snap = await get(ref(window._db, 'config/travaAgenda'));
+    if (snap.exists() && snap.val().ativa) {
+      const t = snap.val();
+      const p = (t.data||'').split('-');
+      const dataFmt = p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : t.data;
+      el.style.background = 'rgba(232,82,26,0.12)';
+      el.style.border = '1.5px solid #E8521A';
+      el.innerHTML = `🔒 <strong>Agenda TRAVADA</strong> a partir de ${dataFmt} às ${t.hora || '00:00'}. Clientes não conseguem agendar nesses horários.`;
+      if (document.getElementById('trava_data')) document.getElementById('trava_data').value = t.data || '';
+      if (document.getElementById('trava_hora')) document.getElementById('trava_hora').value = t.hora || '00:00';
+    } else {
+      el.style.background = 'rgba(34,197,94,0.12)';
+      el.style.border = '1.5px solid #22c55e';
+      el.innerHTML = '🔓 <strong>Agenda liberada</strong> — clientes podem agendar normalmente.';
+    }
+  } catch(e) {
+    el.innerHTML = 'Não foi possível ler o status da trava.';
+  }
+}
+
+window.ativarTravaAgenda = async function() {
+  const data = document.getElementById('trava_data')?.value;
+  const hora = document.getElementById('trava_hora')?.value || '00:00';
+  if (!data) { toast('Escolha a data para travar.', 'error'); return; }
+  try {
+    const { ref, update } = window._rtdb;
+    await update(ref(window._db, 'config/travaAgenda'), { ativa: true, data, hora });
+    toast('Agenda travada! 🔒', 'success');
+    carregarStatusTrava();
+  } catch(e) { toast('Erro ao travar agenda.', 'error'); }
+};
+
+window.liberarTravaAgenda = async function() {
+  try {
+    const { ref, update } = window._rtdb;
+    await update(ref(window._db, 'config/travaAgenda'), { ativa: false });
+    toast('Agenda liberada! 🔓', 'success');
+    carregarStatusTrava();
+  } catch(e) { toast('Erro ao liberar agenda.', 'error'); }
 };
 
 // =============================================
@@ -451,6 +541,164 @@ window.aprovarEEnviar = async function() {
     fecharModalOrc();
     carregarOrcamentos();
   } catch(e) { console.error(e); toast('Erro ao enviar.', 'error'); }
+};
+
+// =============================================
+// EDITAR PEDIDO / SERVIÇOS EXTRAS
+// =============================================
+// Preços-base (espelham o app.js do cliente)
+function precoServicoExtra(tipo, opcao, qtd) {
+  qtd = qtd || 1;
+  switch(tipo) {
+    case 'sofa': {
+      const n = parseInt(opcao) || 2;
+      if (n <= 2) return 250; if (n === 3) return 280; if (n === 4) return 300; return 350;
+    }
+    case 'poltrona': return 50 * qtd;
+    case 'colchao': return (opcao === 'solteiro' ? 150 : 200) * qtd;
+    case 'cadeira': return 20 * Math.max(qtd, 6);
+    case 'carro': return opcao === 'completo' ? 300 : 250;
+    default: return 0;
+  }
+}
+
+window.abrirEditarPedido = function() {
+  if (!orcamentoIdAtual || !orcamentoAtual) { toast('Abra um orçamento primeiro.', 'error'); return; }
+  const d = orcamentoAtual;
+  const servicosAtuais = (d.servicos || []).map((s, i) => {
+    const desc = s.tipo === 'sofa' ? `Sofá (${s.pessoas || s.subtipo || '?'} pessoas)` : `${s.tipo} ${s.subtipo ? '('+s.subtipo+')' : ''}`;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid var(--border)">
+      <span style="font-size:0.85rem">${desc}</span>
+      <button class="btn-sm secondary" onclick="removerServicoPedido(${i})" style="font-size:0.72rem">🗑️ Remover</button>
+    </div>`;
+  }).join('') || '<p style="color:var(--text-mid);font-size:0.85rem;padding:8px">Nenhum serviço.</p>';
+
+  const modalHtml = `
+    <div class="modal-overlay open" id="modalEditarPedido" onclick="if(event.target===this)fecharEditarPedido()">
+      <div class="modal" style="max-width:480px;text-align:left">
+        <h3 style="margin-bottom:4px">✏️ Editar Pedido</h3>
+        <p style="font-size:0.85rem;color:var(--text-mid);margin-bottom:16px">${titleCase(d.nome)} (${d.numero})</p>
+
+        <h4 style="font-size:0.9rem;margin-bottom:8px">Serviços atuais</h4>
+        <div style="background:var(--bg-alt);border-radius:8px;margin-bottom:16px">${servicosAtuais}</div>
+
+        <h4 style="font-size:0.9rem;margin-bottom:8px">➕ Adicionar serviço</h4>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <select id="addTipoServico" onchange="atualizarOpcoesServico()" style="flex:1;min-width:120px;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+            <option value="sofa">Sofá</option>
+            <option value="poltrona">Poltrona</option>
+            <option value="colchao">Colchão</option>
+            <option value="cadeira">Cadeiras</option>
+            <option value="carro">Carro</option>
+          </select>
+          <select id="addOpcaoServico" style="flex:1;min-width:120px;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)"></select>
+          <input type="number" id="addQtdServico" value="1" min="1" style="width:70px;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)" />
+        </div>
+        <button class="btn-sm primary" onclick="adicionarServicoPedido()" style="width:100%;margin-bottom:16px">➕ Adicionar ao pedido</button>
+
+        <div style="background:rgba(34,197,94,0.1);border-radius:8px;padding:12px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;font-weight:700">
+            <span>Novo valor total:</span>
+            <span id="novoValorTotal" style="color:#16a34a">R$ ${((d.valorFinal || d.valorEstimado) || 0).toFixed(2).replace('.',',')}</span>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px">
+          <button class="btn-sm primary" onclick="salvarEdicaoPedido()" style="flex:1">✓ Salvar alterações</button>
+          <button class="btn-sm secondary" onclick="fecharEditarPedido()">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+
+  const div = document.createElement('div');
+  div.id = 'wrapperEditarPedido';
+  div.innerHTML = modalHtml;
+  document.body.appendChild(div);
+  // Guarda uma cópia editável dos serviços
+  window._servicosEditaveis = JSON.parse(JSON.stringify(d.servicos || []));
+  atualizarOpcoesServico();
+  recalcularValorEdicao();
+};
+
+window.atualizarOpcoesServico = function() {
+  const tipo = document.getElementById('addTipoServico')?.value;
+  const sel = document.getElementById('addOpcaoServico');
+  if (!sel) return;
+  const opcoes = {
+    sofa: [['2','2 pessoas'],['3','3 pessoas'],['4','4 pessoas'],['5','5+ pessoas']],
+    poltrona: [['unica','Poltrona']],
+    colchao: [['solteiro','Solteiro'],['casal','Casal']],
+    cadeira: [['jantar','Jantar']],
+    carro: [['bancos','Bancos'],['completo','Bancos+teto']]
+  };
+  sel.innerHTML = (opcoes[tipo] || []).map(o => `<option value="${o[0]}">${o[1]}</option>`).join('');
+};
+
+window.adicionarServicoPedido = function() {
+  const tipo = document.getElementById('addTipoServico')?.value;
+  const opcao = document.getElementById('addOpcaoServico')?.value;
+  const qtd = parseInt(document.getElementById('addQtdServico')?.value) || 1;
+  const novo = { tipo, quantidade: qtd };
+  if (tipo === 'sofa') { novo.pessoas = opcao; novo.subtipo = `${opcao} pessoas`; }
+  else novo.subtipo = opcao;
+  window._servicosEditaveis.push(novo);
+  toast('Serviço adicionado! Salve para confirmar.', 'success');
+  reabrirEdicao();
+};
+
+window.removerServicoPedido = function(i) {
+  window._servicosEditaveis.splice(i, 1);
+  reabrirEdicao();
+};
+
+function reabrirEdicao() {
+  // Guarda os serviços editados temporariamente e reabre o modal atualizado
+  const editados = window._servicosEditaveis;
+  fecharEditarPedido();
+  orcamentoAtual.servicos = editados;
+  abrirEditarPedido();
+}
+
+function recalcularValorEdicao() {
+  let total = 0;
+  (window._servicosEditaveis || []).forEach(s => {
+    const opcao = s.tipo === 'sofa' ? s.pessoas : s.subtipo;
+    total += precoServicoExtra(s.tipo, opcao, s.quantidade);
+  });
+  const el = document.getElementById('novoValorTotal');
+  if (el) el.textContent = `R$ ${total.toFixed(2).replace('.',',')}`;
+  window._novoValorPedido = total;
+}
+
+window.salvarEdicaoPedido = async function() {
+  if (!orcamentoIdAtual) return;
+  recalcularValorEdicao();
+  try {
+    const { ref, update } = window._rtdb;
+    await update(ref(window._db, `orcamentos/${orcamentoIdAtual}`), {
+      servicos: window._servicosEditaveis,
+      valorFinal: window._novoValorPedido
+    });
+    // Se houver agendamento vinculado, atualiza os serviços e valor lá também
+    const agId = `manual_${orcamentoIdAtual}`;
+    try {
+      await update(ref(window._db, `agendamentos/${agId}`), {
+        servicos: window._servicosEditaveis,
+        valor: window._novoValorPedido
+      });
+    } catch(e) {}
+    toast('Pedido atualizado! Valor e financeiro ajustados. ✓', 'success');
+    fecharEditarPedido();
+    fecharModalOrc();
+  } catch(e) {
+    console.error('Erro ao salvar edição:', e);
+    toast('Erro ao salvar alterações.', 'error');
+  }
+};
+
+window.fecharEditarPedido = function() {
+  const w = document.getElementById('wrapperEditarPedido');
+  if (w) w.remove();
 };
 
 window.abrirWhatsCliente = function() {
@@ -1440,11 +1688,14 @@ window.renderAdminCalendar = function() {
   agendaListaHtml.innerHTML = '';
   lista.forEach(ag => {
     const semAg = ag.semAgendamento || !ag.data;
-    // Data amigável
-    let dataFmt = ag.dataFmt || (semAg ? 'A definir' : 'Sem data');
-    if (ag.data && !ag.dataFmt) {
-      const p = ag.data.split('-');
-      if (p.length === 3) dataFmt = `${p[2]}/${p[1]}/${p[0]}`;
+    // Data amigável: "quinta-feira, 09 de julho"
+    let dataFmt = semAg ? 'A definir' : 'Sem data';
+    if (ag.data) {
+      const [ano, mes, dia] = ag.data.split('-').map(Number);
+      const dObj = new Date(ano, mes - 1, dia);
+      dataFmt = dObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+      // Capitaliza o dia da semana (quinta-feira -> Quinta-feira)
+      dataFmt = dataFmt.charAt(0).toUpperCase() + dataFmt.slice(1);
     }
     const horario = ag.hora || (semAg ? 'Aguardando cliente' : '—');
     const servicos = (ag.servicos || []).map(s => {
@@ -1494,63 +1745,36 @@ window.renderAdminCalendar = function() {
 // RELATÓRIOS DE ATENDIMENTOS (só concluídos)
 // =============================================
 let periodoRelatorio = 'semanal';
-let periodoCustom = { inicio: null, fim: null };
 let chartRelServicos, chartRelCidades;
 
 window.mudarPeriodoRelatorio = function(periodo) {
   periodoRelatorio = periodo;
-  periodoCustom = { inicio: null, fim: null }; // limpa o custom ao clicar em semanal/mensal
   document.getElementById('btnRelSemanal').className = periodo === 'semanal' ? 'btn-sm primary' : 'btn-sm secondary';
   document.getElementById('btnRelMensal').className = periodo === 'mensal' ? 'btn-sm primary' : 'btn-sm secondary';
   renderRelatorios();
-};
-
-window.aplicarPeriodoPersonalizado = function() {
-  const inicio = document.getElementById('relDataInicio')?.value;
-  const fim = document.getElementById('relDataFim')?.value;
-  if (!inicio || !fim) { toast('Escolha as duas datas (início e fim).', 'error'); return; }
-  if (inicio > fim) { toast('A data de início não pode ser maior que a data fim.', 'error'); return; }
-  periodoCustom = { inicio, fim };
-  periodoRelatorio = 'personalizado';
-  // Tira o destaque dos botões semanal/mensal
-  document.getElementById('btnRelSemanal').className = 'btn-sm secondary';
-  document.getElementById('btnRelMensal').className = 'btn-sm secondary';
-  renderRelatorios();
-  toast('Período aplicado! ✓', 'success');
-};
-
-window.limparPeriodoPersonalizado = function() {
-  document.getElementById('relDataInicio').value = '';
-  document.getElementById('relDataFim').value = '';
-  mudarPeriodoRelatorio('semanal');
 };
 
 function renderRelatorios() {
   // Só atendimentos CONCLUÍDOS (serviço realizado de fato)
   const concluidos = (ORCAMENTOS || []).filter(o => o.status === 'concluido');
 
-  // Determina o período
+  // Filtra pelo período
   const agora = new Date();
-  let inicio, fim = agora;
-
-  if (periodoRelatorio === 'personalizado' && periodoCustom.inicio && periodoCustom.fim) {
-    inicio = new Date(periodoCustom.inicio + 'T00:00:00');
-    fim = new Date(periodoCustom.fim + 'T23:59:59');
-  } else if (periodoRelatorio === 'semanal') {
+  let inicio;
+  if (periodoRelatorio === 'semanal') {
     inicio = new Date(agora); inicio.setDate(agora.getDate() - 7);
   } else {
     inicio = new Date(agora); inicio.setMonth(agora.getMonth() - 1);
   }
-
   const doPeriodo = concluidos.filter(o => {
     const d = o.criadoEm ? new Date(o.criadoEm) : null;
-    return d && d >= inicio && d <= fim;
+    return d && d >= inicio && d <= agora;
   });
 
   // Label do período
-  const fmtData = (d) => d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+  const fmtData = (d) => d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' });
   const lbl = document.getElementById('relPeriodoLabel');
-  if (lbl) lbl.textContent = `${fmtData(inicio)} até ${fmtData(fim)}`;
+  if (lbl) lbl.textContent = `${fmtData(inicio)} até ${fmtData(agora)}`;
 
   // KPIs
   let faturamento = 0;
@@ -1644,18 +1868,12 @@ function renderChartRelatorio(servicosCount, cidadesCount) {
 window.exportarRelatorioAtendimentos = function() {
   const concluidos = (ORCAMENTOS || []).filter(o => o.status === 'concluido');
   const agora = new Date();
-  let inicio, fim = agora;
-  if (periodoRelatorio === 'personalizado' && periodoCustom.inicio && periodoCustom.fim) {
-    inicio = new Date(periodoCustom.inicio + 'T00:00:00');
-    fim = new Date(periodoCustom.fim + 'T23:59:59');
-  } else if (periodoRelatorio === 'semanal') {
-    inicio = new Date(agora); inicio.setDate(agora.getDate() - 7);
-  } else {
-    inicio = new Date(agora); inicio.setMonth(agora.getMonth() - 1);
-  }
+  let inicio = new Date(agora);
+  if (periodoRelatorio === 'semanal') inicio.setDate(agora.getDate() - 7);
+  else inicio.setMonth(agora.getMonth() - 1);
   const dados = concluidos.filter(o => {
     const d = o.criadoEm ? new Date(o.criadoEm) : null;
-    return d && d >= inicio && d <= fim;
+    return d && d >= inicio;
   });
 
   let csv = 'Numero,Data,Cliente,WhatsApp,Servicos,Cidade,Valor\n';
@@ -1700,11 +1918,16 @@ window.abrirDefinirDataHora = function(numero) {
           <label>Data do atendimento</label>
           <input type="date" id="inputDataManual" min="${hoje}" value="${orc.dataAgendada || hoje}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)" />
         </div>
-        <div class="settings-field" style="margin-bottom:20px">
-          <label>Horário</label>
+        <div class="settings-field" style="margin-bottom:16px">
+          <label>Horário de início</label>
           <select id="inputHoraManual" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
             ${horarios.map(h => `<option value="${h}" ${orc.horaAgendada===h?'selected':''}>${h}</option>`).join('')}
           </select>
+        </div>
+        <div class="settings-field" style="margin-bottom:20px">
+          <label>⏱️ Duração do serviço (minutos)</label>
+          <input type="number" id="inputDuracaoManual" min="30" step="15" value="${orc.duracaoMin || 60}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)" />
+          <span style="font-size:0.75rem;color:var(--text-mid)">Ex: sofá grande = 150 min. O sistema bloqueia os horários seguintes + deslocamento.</span>
         </div>
         <div style="display:flex;gap:10px">
           <button class="btn-sm primary" onclick="salvarDataHoraManual('${numero}')" style="flex:1">✓ Confirmar</button>
@@ -1727,6 +1950,7 @@ window.fecharDefinirDataHora = function() {
 window.salvarDataHoraManual = async function(numero) {
   const data = document.getElementById('inputDataManual')?.value;
   const hora = document.getElementById('inputHoraManual')?.value;
+  const duracaoMin = parseInt(document.getElementById('inputDuracaoManual')?.value) || 60;
   if (!data || !hora) { toast('Escolha data e horário.', 'error'); return; }
 
   const orc = (ORCAMENTOS || []).find(o => o.numero === numero);
@@ -1734,34 +1958,48 @@ window.salvarDataHoraManual = async function(numero) {
 
   try {
     const { ref, runTransaction, update, get } = window._rtdb;
-    const horaKey = hora.replace(':', 'h');
 
-    // Verifica se o horário está livre (trava anti-duplicação)
-    const slotRef = ref(window._db, `slots/${data}/${horaKey}`);
-    const resultado = await runTransaction(slotRef, (atual) => {
-      if (atual) return; // ocupado -> aborta
-      return { ocupado: true, numero: numero, cliente: orc.nome, criadoEm: Date.now(), manual: true };
-    });
+    // Calcula todos os slots que o serviço ocupa (duração + deslocamento)
+    const slotsNecessarios = slotsOcupadosPor(hora, duracaoMin);
 
-    if (!resultado.committed) {
-      toast('Esse horário já está ocupado. Escolha outro.', 'error');
+    // Primeiro, libera os slots antigos deste agendamento (se remarcando)
+    if (orc.dataAgendada && orc.slotsOcupados) {
+      const libera = {};
+      orc.slotsOcupados.forEach(s => { libera[horaParaChave(s)] = null; });
+      try { await update(ref(window._db, `slots/${orc.dataAgendada}`), libera); } catch(e) {}
+    } else if (orc.dataAgendada && orc.horaAgendada) {
+      // compatibilidade: libera só o slot único antigo
+      try { await update(ref(window._db, `slots/${orc.dataAgendada}`), { [horaParaChave(orc.horaAgendada)]: null }); } catch(e) {}
+    }
+
+    // Verifica se TODOS os slots necessários estão livres
+    const snapSlots = await get(ref(window._db, `slots/${data}`));
+    const ocupadosAtuais = snapSlots.exists() ? snapSlots.val() : {};
+    const conflitantes = slotsNecessarios.filter(s => ocupadosAtuais[horaParaChave(s)]);
+    if (conflitantes.length > 0) {
+      toast(`Conflito: os horários ${conflitantes.join(', ')} já estão ocupados. Escolha outro horário ou reduza a duração.`, 'error');
+      // Re-bloqueia os que acabei de liberar (rollback), para não deixar buraco
+      renderAdminCalendar();
       return;
     }
 
-    // Libera o slot antigo, se havia
-    if (orc.dataAgendada && orc.horaAgendada) {
-      const oldKey = orc.horaAgendada.replace(':', 'h');
-      try { await update(ref(window._db, `slots/${orc.dataAgendada}`), { [oldKey]: null }); } catch(e) {}
-    }
+    // Bloqueia todos os slots necessários
+    const bloqueio = {};
+    slotsNecessarios.forEach(s => {
+      bloqueio[horaParaChave(s)] = { ocupado: true, numero, cliente: orc.nome, criadoEm: Date.now(), manual: true };
+    });
+    await update(ref(window._db, `slots/${data}`), bloqueio);
 
-    // Atualiza o orçamento
+    // Atualiza o orçamento (guarda também a duração e os slots ocupados)
     await update(ref(window._db, `orcamentos/${orc.id}`), {
       status: 'confirmado',
       dataAgendada: data,
-      horaAgendada: hora
+      horaAgendada: hora,
+      duracaoMin: duracaoMin,
+      slotsOcupados: slotsNecessarios
     });
 
-    // Cria/atualiza registro na tabela de agendamentos (para aparecer com data na agenda)
+    // Cria/atualiza registro na agenda
     const dataObj = new Date(`${data}T${hora}`);
     const dataFmt = dataObj.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
     await update(ref(window._db, `agendamentos/manual_${orc.id}`), {
@@ -1775,14 +2013,15 @@ window.salvarDataHoraManual = async function(numero) {
       data: data,
       dataFmt: dataFmt,
       hora: hora,
+      duracaoMin: duracaoMin,
       status: 'confirmado',
       manual: true,
       criadoEm: Date.now()
     });
 
-    toast('Data e hora definidas! ✓', 'success');
+    const fim = slotsNecessarios[slotsNecessarios.length - 1];
+    toast(`Agendado! Ocupa ${slotsNecessarios.length}h (${slotsNecessarios[0]}–${fim}). ✓`, 'success');
     fecharDefinirDataHora();
-    // A agenda atualiza sozinha pela escuta
   } catch(e) {
     console.error('Erro ao definir data/hora:', e);
     toast('Erro ao salvar. Tente novamente.', 'error');

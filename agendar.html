@@ -217,18 +217,35 @@ async function renderHorarios() {
     }
   } catch(e) {}
 
+  // Verifica a TRAVA DE AGENDA (admin bloqueou novos agendamentos)
+  let travaAgenda = null;
+  try {
+    const { ref, get } = window._rtdb;
+    const travaSnap = await get(ref(window._db, 'config/travaAgenda'));
+    if (travaSnap.exists()) travaAgenda = travaSnap.val();
+  } catch(e) {}
+
   // Verifica se a data selecionada é hoje (para bloquear horas que já passaram)
   const agora = new Date();
   const ehHoje = dataSelecionada.getFullYear() === agora.getFullYear()
     && dataSelecionada.getMonth() === agora.getMonth()
     && dataSelecionada.getDate() === agora.getDate();
 
+  // A trava está ativa para esta data/hora?
+  function bloqueadoPorTrava(hora) {
+    if (!travaAgenda || !travaAgenda.ativa) return false;
+    // Bloqueia tudo a partir da data/hora definida pelo admin
+    const dataHoraSlot = new Date(`${dataStr}T${hora}:00`);
+    const dataHoraTrava = new Date(`${travaAgenda.data}T${travaAgenda.hora || '00:00'}:00`);
+    return dataHoraSlot >= dataHoraTrava;
+  }
+
   slots.innerHTML = '';
   let algumLivre = false;
   HORARIOS.forEach(h => {
     const horaNum = parseInt(h.split(':')[0]);
     const jaPassou = ehHoje && horaNum <= agora.getHours();
-    const taken = ocupados.includes(h) || jaPassou;
+    const taken = ocupados.includes(h) || jaPassou || bloqueadoPorTrava(h);
     const el = document.createElement('div');
     el.className = `time-slot ${taken ? 'taken' : ''}`;
     el.textContent = h;

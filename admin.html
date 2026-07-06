@@ -536,10 +536,40 @@
           <div class="settings-field"><label>WhatsApp Admin</label><input type="text" id="admin_whats" value="5511992067073" /></div>
           <div class="settings-field"><label>WhatsApp da Empresa</label><input type="text" id="empresa_whats" value="5511992067073" /></div>
           <div class="settings-field"><label>CEP da Sede</label><input type="text" id="sede_cep" value="09361250" /></div>
-          <div class="settings-field"><label>Horários disponíveis (separados por vírgula)</label>
-            <input type="text" id="horarios_disponiveis" value="08:00,09:00,10:00,11:00,13:00,14:00,15:00,16:00,17:00" />
+          <div class="settings-field"><label>⏱️ Intervalo de deslocamento entre atendimentos (minutos)</label>
+            <input type="number" id="deslocamento_min" value="30" min="0" step="5" />
+            <span style="font-size:0.75rem;color:var(--text-mid)">Tempo reservado para o técnico se deslocar entre um serviço e outro.</span>
           </div>
           <button class="btn-save" onclick="salvarGeral()">Salvar Configurações</button>
+        </div>
+
+        <div class="settings-card">
+          <h3>🔒 Trava de Agenda</h3>
+          <p style="font-size:0.85rem;color:var(--text-mid);margin-bottom:16px">
+            Bloqueie novos agendamentos a partir de uma data/hora (para imprevistos). O cliente não conseguirá agendar nos horários travados até você liberar.
+          </p>
+          <div id="travaStatus" style="padding:12px;border-radius:10px;margin-bottom:16px;font-size:0.88rem"></div>
+          <div class="settings-field"><label>Bloquear a partir da data</label>
+            <input type="date" id="trava_data" />
+          </div>
+          <div class="settings-field"><label>Bloquear a partir da hora</label>
+            <select id="trava_hora">
+              <option value="00:00">Dia inteiro (00:00)</option>
+              <option value="09:00">09:00</option>
+              <option value="10:00">10:00</option>
+              <option value="11:00">11:00</option>
+              <option value="12:00">12:00</option>
+              <option value="13:00">13:00</option>
+              <option value="14:00">14:00</option>
+              <option value="15:00">15:00</option>
+              <option value="16:00">16:00</option>
+              <option value="17:00">17:00</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn-save" style="background:#E8521A" onclick="ativarTravaAgenda()">🔒 Ativar trava</button>
+            <button class="btn-save" style="background:#22c55e" onclick="liberarTravaAgenda()">🔓 Liberar agenda</button>
+          </div>
         </div>
 
       </div>
@@ -588,6 +618,7 @@
     </div>
 
     <div class="modal-actions">
+      <button class="btn-sm primary" onclick="abrirEditarPedido()">✏️ Editar pedido / add serviço</button>
       <button class="btn-sm success" onclick="aprovarEEnviar()">✓ Aprovar e Enviar ao Cliente</button>
       <button class="btn-sm orange" onclick="abrirWhatsCliente()">💬 Falar no WhatsApp</button>
       <button class="btn-sm secondary" onclick="fecharModalOrc()">Fechar</button>
