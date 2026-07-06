@@ -938,7 +938,7 @@ function renderTabelaClientes(docsEntrada) {
       }
       const c = clientesMap[key];
       c.servicos += (d.servicos || []).length;
-      c.total += d.valorEstimado || d.valorFinal || calcularOrcamentoCompleto(d).total;
+      c.total += d.valorFinal || d.valorEstimado || calcularOrcamentoCompleto(d).total;
       if (d.criadoEm > c.ultimo) c.ultimo = d.criadoEm;
       if (d.status === 'concluido') c.temConcluido = true;
       if (d.status === 'confirmado' || d.status === 'confirmed') c.temConfirmado = true;
@@ -1399,7 +1399,7 @@ window.renderAdminCalendar = function() {
       whatsapp: o.whatsapp,
       endereco: o.endereco,
       servicos: o.servicos || [],
-      valor: o.valorEstimado || o.valorFinal || 0,
+      valor: o.valorFinal || o.valorEstimado || 0,
       data: o.dataAgendada || null,
       hora: o.horaAgendada || null,
       semAgendamento: !o.dataAgendada  // marca que foi confirmado na mão, sem dia/hora
@@ -1451,7 +1451,11 @@ window.renderAdminCalendar = function() {
       if (s.tipo === 'sofa') return `• Sofá (${s.pessoas || '?'} pessoas)`;
       return `• ${s.tipo} ${s.subtipo ? '('+s.subtipo+')' : ''}`;
     }).join('<br>') || '—';
-    const valor = ag.valor || 0;
+    // Busca o valor ATUAL do orçamento (pode ter sido ajustado pelo admin depois)
+    const orcAtual = (ORCAMENTOS || []).find(o => o.numero === ag.numero);
+    const valor = orcAtual
+      ? (orcAtual.valorFinal || orcAtual.valorEstimado || ag.valor || 0)
+      : (ag.valor || 0);
     const wpp = (ag.whatsapp || '').replace(/\D/g,'');
     const corBorda = semAg ? '#f59e0b' : '#22c55e';   // laranja se "a definir", verde se agendado
     const corData = semAg ? '#f59e0b' : '#22c55e';
@@ -1528,7 +1532,7 @@ function renderRelatorios() {
   const cidadesCount = {};
 
   doPeriodo.forEach(o => {
-    const valor = o.valorEstimado || o.valorFinal || calcularOrcamentoCompleto(o).total;
+    const valor = o.valorFinal || o.valorEstimado || calcularOrcamentoCompleto(o).total;
     faturamento += valor;
     clientesSet.add(o.whatsapp || o.nome);
     (o.servicos || []).forEach(s => {
@@ -1560,7 +1564,7 @@ function renderRelatorios() {
         const data = o.criadoEm ? new Date(o.criadoEm).toLocaleDateString('pt-BR') : '—';
         const servicos = (o.servicos || []).map(s => s.tipo === 'sofa' ? `Sofá (${s.pessoas||'?'}p)` : s.tipo).join(', ');
         const cidade = o.endereco?.split(' - ')[1]?.split('/')[0] || '—';
-        const valor = o.valorEstimado || o.valorFinal || calcularOrcamentoCompleto(o).total;
+        const valor = o.valorFinal || o.valorEstimado || calcularOrcamentoCompleto(o).total;
         tbody.innerHTML += `
           <tr>
             <td><strong>${o.numero||'—'}</strong></td>
@@ -1626,7 +1630,7 @@ window.exportarRelatorioAtendimentos = function() {
     const data = o.criadoEm ? new Date(o.criadoEm).toLocaleDateString('pt-BR') : '';
     const servicos = (o.servicos||[]).map(s => s.tipo).join(' + ');
     const cidade = o.endereco?.split(' - ')[1]?.split('/')[0] || '';
-    const valor = o.valorEstimado || o.valorFinal || 0;
+    const valor = o.valorFinal || o.valorEstimado || 0;
     csv += `${o.numero||''},${data},"${o.nome||''}",${o.whatsapp||''},"${servicos}",${cidade},${valor.toFixed(2)}\n`;
   });
 
@@ -1734,7 +1738,7 @@ window.salvarDataHoraManual = async function(numero) {
       whatsapp: orc.whatsapp || '',
       endereco: orc.endereco || '',
       servicos: orc.servicos || [],
-      valor: orc.valorEstimado || orc.valorFinal || 0,
+      valor: orc.valorFinal || orc.valorEstimado || 0,
       data: data,
       dataFmt: dataFmt,
       hora: hora,
