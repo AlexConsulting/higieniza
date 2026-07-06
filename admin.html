@@ -341,13 +341,27 @@
     </div>
 
     <div id="page-relatorios" class="page" style="display:none">
-      <div class="table-header" style="margin-bottom:20px">
+      <div class="table-header" style="margin-bottom:16px;flex-wrap:wrap;gap:12px">
         <h3>📊 Relatório de Atendimentos Realizados</h3>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn-sm primary" id="btnRelSemanal" onclick="mudarPeriodoRelatorio('semanal')">Semanal</button>
           <button class="btn-sm secondary" id="btnRelMensal" onclick="mudarPeriodoRelatorio('mensal')">Mensal</button>
           <button class="btn-sm secondary" onclick="exportarRelatorioAtendimentos()">📥 Exportar CSV</button>
         </div>
+      </div>
+
+      <!-- Filtro por período personalizado -->
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;background:var(--bg-alt);padding:14px 16px;border-radius:12px;margin-bottom:24px">
+        <div>
+          <label style="display:block;font-size:0.78rem;color:var(--text-mid);margin-bottom:4px">Data início</label>
+          <input type="date" id="relDataInicio" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)" />
+        </div>
+        <div>
+          <label style="display:block;font-size:0.78rem;color:var(--text-mid);margin-bottom:4px">Data fim</label>
+          <input type="date" id="relDataFim" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)" />
+        </div>
+        <button class="btn-sm primary" onclick="aplicarPeriodoPersonalizado()">🔍 Aplicar período</button>
+        <button class="btn-sm secondary" onclick="limparPeriodoPersonalizado()">Limpar</button>
       </div>
 
       <div class="dashboard-grid" style="margin-bottom:24px">
