@@ -99,6 +99,14 @@ cepInput?.addEventListener('input', (e) => {
   let v = e.target.value.replace(/\D/g, '');
   if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
   e.target.value = v;
+  // CAMADA 1: busca automática assim que completa os 8 dígitos
+  const digitos = v.replace(/\D/g, '');
+  if (digitos.length === 8) {
+    buscarCep();
+  } else {
+    // Ainda incompleto: limpa o status/endereço
+    marcarEnderecoNaoConfirmado();
+  }
 });
 
 // WhatsApp MASK
@@ -112,27 +120,66 @@ whatsInput?.addEventListener('input', (e) => {
   e.target.value = v;
 });
 
-// BUSCAR CEP
+// BUSCAR CEP (botão continua funcionando como reforço)
 document.getElementById('btnBuscarCep')?.addEventListener('click', buscarCep);
 cepInput?.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); buscarCep(); } });
 
+// Estado do endereço (CAMADA 2/3): controla se foi confirmado
+let enderecoConfirmado = false;
+
+function marcarEnderecoConfirmado(texto) {
+  enderecoConfirmado = true;
+  const status = document.getElementById('cepStatus');
+  if (status) {
+    status.style.display = 'block';
+    status.style.color = '#16a34a';
+    status.innerHTML = `✓ ${texto}`;
+  }
+}
+function marcarEnderecoNaoConfirmado(msg) {
+  enderecoConfirmado = false;
+  const status = document.getElementById('cepStatus');
+  if (status) {
+    if (msg) {
+      status.style.display = 'block';
+      status.style.color = '#dc2626';
+      status.innerHTML = `⚠️ ${msg}`;
+    } else {
+      status.style.display = 'none';
+    }
+  }
+}
+
 async function buscarCep() {
   const cep = cepInput.value.replace(/\D/g, '');
-  if (cep.length !== 8) { showToast('CEP inválido. Digite 8 dígitos.', 'error'); return; }
+  if (cep.length !== 8) { marcarEnderecoNaoConfirmado('Digite os 8 dígitos do CEP.'); return; }
   const btn = document.getElementById('btnBuscarCep');
-  btn.textContent = '...';
-  btn.disabled = true;
+  const enderecoInput = document.getElementById('endereco');
+  if (btn) { btn.textContent = '...'; btn.disabled = true; }
+  const status = document.getElementById('cepStatus');
+  if (status) { status.style.display = 'block'; status.style.color = 'var(--text-mid)'; status.innerHTML = '🔎 Buscando endereço...'; }
+
   try {
     const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     const data = await res.json();
-    if (data.erro) { showToast('CEP não encontrado.', 'error'); return; }
-    document.getElementById('endereco').value = `${data.logradouro}, ${data.bairro} - ${data.localidade}/${data.uf}`;
-    showToast('Endereço encontrado! ✓', 'success');
+    if (data.erro) {
+      // CEP não encontrado — plano B: deixa preencher manualmente
+      enderecoInput.value = '';
+      enderecoInput.readOnly = false;
+      enderecoInput.placeholder = 'CEP não encontrado — digite seu endereço completo com cidade';
+      marcarEnderecoNaoConfirmado('CEP não encontrado. Preencha o endereço manualmente (rua, bairro, cidade).');
+      return;
+    }
+    const enderecoFmt = `${data.logradouro}, ${data.bairro} - ${data.localidade}/${data.uf}`;
+    enderecoInput.value = enderecoFmt;
+    marcarEnderecoConfirmado(`Endereço confirmado: ${data.bairro || ''} - ${data.localidade}/${data.uf}`);
+    // Foca no campo número para agilizar
+    document.getElementById('numero')?.focus();
   } catch {
-    showToast('Erro ao buscar CEP. Tente novamente.', 'error');
+    marcarEnderecoNaoConfirmado('Erro ao buscar. Verifique sua conexão ou preencha manualmente.');
+    if (enderecoInput) enderecoInput.readOnly = false;
   } finally {
-    btn.textContent = 'Buscar';
-    btn.disabled = false;
+    if (btn) { btn.textContent = 'Buscar'; btn.disabled = false; }
   }
 }
 
@@ -372,6 +419,35 @@ document.getElementById('orcamentoForm')?.addEventListener('submit', async (e) =
 
   if (selectedServices.size === 0) {
     showToast('Selecione pelo menos um serviço!', 'error');
+    return;
+  }
+
+  // CAMADA 2: validação obrigatória de endereço e cidade
+  const cepVal = document.getElementById('cep').value.replace(/\D/g, '');
+  const enderecoVal = document.getElementById('endereco').value.trim();
+  const numeroVal = document.getElementById('numero')?.value.trim() || '';
+
+  if (cepVal.length !== 8) {
+    showToast('Informe um CEP válido (8 dígitos).', 'error');
+    document.getElementById('cep')?.focus();
+    return;
+  }
+  if (!enderecoVal || enderecoVal.length < 8) {
+    showToast('Confirme seu endereço. Digite o CEP e aguarde o preenchimento, ou preencha manualmente.', 'error');
+    document.getElementById('endereco')?.focus();
+    marcarEnderecoNaoConfirmado('Endereço obrigatório. Confirme antes de enviar.');
+    return;
+  }
+  // Verifica se o endereço tem cidade (contém "/UF" ou pelo menos uma vírgula com texto)
+  const temCidade = /\/[A-Za-z]{2}/.test(enderecoVal) || enderecoVal.split(',').length >= 2;
+  if (!temCidade) {
+    showToast('O endereço precisa incluir a cidade. Verifique o CEP ou complete o endereço.', 'error');
+    document.getElementById('endereco')?.focus();
+    return;
+  }
+  if (!numeroVal) {
+    showToast('Informe o número da residência.', 'error');
+    document.getElementById('numero')?.focus();
     return;
   }
 

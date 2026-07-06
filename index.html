@@ -439,10 +439,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <input type="text" id="cep" placeholder="00000-000" maxlength="9" required />
               <button type="button" class="btn-buscar-cep" id="btnBuscarCep">Buscar</button>
             </div>
+            <span id="cepStatus" style="display:none;font-size:0.8rem;margin-top:6px;font-weight:600"></span>
           </div>
           <div class="form-group">
-            <label for="endereco">Endereço (preenchido automaticamente)</label>
-            <input type="text" id="endereco" placeholder="Rua, número, bairro..." />
+            <label for="endereco">Endereço * <span style="font-weight:400;font-size:0.8rem;color:var(--text-mid)">(preenchido pelo CEP)</span></label>
+            <input type="text" id="endereco" placeholder="Digite o CEP acima para preencher" required />
           </div>
         </div>
 
