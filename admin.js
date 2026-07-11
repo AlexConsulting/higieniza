@@ -431,7 +431,10 @@ function renderTabelaOrcamentos(docs) {
   lista.forEach(d => {
     const id = d.id;
     const calc = calcularOrcamentoCompleto(d);
-    const data = d.criadoEm ? new Date(d.criadoEm).toLocaleDateString('pt-BR') : '—';
+    const dataObj = d.criadoEm ? new Date(d.criadoEm) : null;
+    const data = dataObj
+      ? `${dataObj.toLocaleDateString('pt-BR')}<br><span style="font-size:0.75rem;color:var(--text-mid)">${dataObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>`
+      : '—';
     const servicos = (d.servicos || []).map(s => s.tipo).join(', ');
     const cidadeLabel = d.endereco?.split(' - ')[1]?.split('/')[0] || '—';
 
