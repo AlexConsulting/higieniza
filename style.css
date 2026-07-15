@@ -2152,6 +2152,42 @@ tr:hover td { background: var(--bg-alt); }
   color: white;
 }
 
+/* BOTÃO CTA WHATSAPP (versão leve) */
+.btn-whats-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+  padding: 20px 32px;
+  background: #25D366;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 100px;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 8px 30px rgba(37,211,102,0.4);
+  transition: all var(--transition);
+  animation: whatsCtaPulse 2s ease-in-out infinite;
+}
+.btn-whats-cta:hover {
+  background: #1fb855;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(37,211,102,0.5);
+  animation-play-state: paused;
+}
+@keyframes whatsCtaPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+@media (max-width: 768px) {
+  .btn-whats-cta { font-size: 1rem; padding: 18px 24px; }
+}
+
 /* WHATSAPP FLUTUANTE */
 .whatsapp-float {
   position: fixed;
